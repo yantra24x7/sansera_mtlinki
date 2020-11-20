@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  date: 2020-05-15
+  shift_num: 1
+  data: 
+
+two:
+  date: 2020-05-15
+  shift_num: 1
+  data: 

@@ -1,0 +1,17 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  start_time: MyString
+  end_time: MyString
+  total_hour: MyString
+  shift_no: MyString
+  start_day: MyString
+  end_day: MyString
+
+two:
+  start_time: MyString
+  end_time: MyString
+  total_hour: MyString
+  shift_no: MyString
+  start_day: MyString
+  end_day: MyString

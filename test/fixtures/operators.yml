@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  operator_name: MyString
+  operator_spec_id: MyString
+  description: MyString
+  isactive: false
+
+two:
+  operator_name: MyString
+  operator_spec_id: MyString
+  description: MyString
+  isactive: false

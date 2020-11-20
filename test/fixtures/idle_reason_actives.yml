@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  reason: MyString
+  machine_name: MyString
+  l0_setting: one
+  idle_reason: one
+
+two:
+  reason: MyString
+  machine_name: MyString
+  l0_setting: two
+  idle_reason: two

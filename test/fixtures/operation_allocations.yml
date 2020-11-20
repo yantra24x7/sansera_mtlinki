@@ -1,0 +1,17 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  L0_name: MyString
+  description: MyString
+  shift: one
+  operator: one
+  from_date: 2020-02-24
+  to_date: 2020-02-24
+
+two:
+  L0_name: MyString
+  description: MyString
+  shift: two
+  operator: two
+  from_date: 2020-02-24
+  to_date: 2020-02-24
