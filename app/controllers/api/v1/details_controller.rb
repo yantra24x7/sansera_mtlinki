@@ -118,9 +118,10 @@ module Api
         
         data2 = []  
         date = Date.today.to_s
+       # date = "25-08-2020"
         shift = Shift.current_shift
         # date = (Date.today - 2.day).to_s    
-        # shift = Shift.find_by(shift_no: 4)
+       # shift = Shift.find_by(shift_no: 2)
         case
         when shift.start_day == '1' && shift.end_day == '1'
           start_time = (date+" "+shift.start_time).to_time
@@ -138,16 +139,17 @@ module Api
           end_time = (date+" "+shift.end_time).to_time
         end
         
-        
+     #  byebug 
         cur_st = CurrentStatus.last
         if cur_st.start_time.localtime == start_time.localtime &&  cur_st.end_time.localtime == end_time.localtime
+         
           render json: cur_st.data.first
         else
        
         duration = (end_time - start_time).to_i
         status = ['OPERATE', 'MANUAL','DISCONNECT','ALARM','EMERGENCY','STOP','SUSPEND','WARMUP']
         machines = L0Setting.pluck(:L0Name)
-        machine_logs = L1SignalPoolCapped.where(:enddate.gte => start_time, :updatedate.lte => end_time, :signalname.in => status, value: true)      
+        machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)      
 
         machines.map do |mac|
           aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
@@ -161,9 +163,9 @@ module Api
             if machine_log.count == 0
               status1 = 'DISCONNECT'
             else
-              if machine_log.last.signalname == 'OPERATE'
+              if machine_log.last.value == 'OPERATE'
                 status1 = 'OPERATE'
-              elsif machine_log.last.signalname == 'DISCONNECT'
+              elsif machine_log.last.value == 'DISCONNECT'
                 status1 = 'DISCONNECT'
               else
                 status1 = 'STOP'
@@ -175,13 +177,13 @@ module Api
               case 
               when torcher_data.updatedate.localtime < start_time.localtime && torcher_data.enddate.localtime > end_time.localtime
                 time_span = end_time - start_time
-                machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
+                machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: end_time, timespan: time_span, signalname: torcher_data.value, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
               when torcher_data.updatedate.localtime < start_time.localtime
                 time_span = torcher_data.enddate.localtime - start_time
-                machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: torcher_data.enddate, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
+                machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: torcher_data.enddate, timespan: time_span, signalname: torcher_data.value, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
               when torcher_data.enddate.localtime > end_time.localtime   
                 time_span = end_time - torcher_data.updatedate.localtime
-                machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: torcher_data.updatedate, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
+                machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: torcher_data.updatedate, enddate: end_time, timespan: time_span, signalname: torcher_data.value, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
               end
             end       
             
@@ -198,21 +200,21 @@ module Api
 
             final_data.each do  |dat|
             case 
-              when dat.signalname == "OPERATE"
+              when dat.value == "OPERATE"
                 operate << dat.timespan
-              when dat.signalname == "MANUAL"
+              when dat.value == "MANUAL"
                 manual << dat.timespan
-              when dat.signalname == "DISCONNECT"
+              when dat.value == "DISCONNECT"
                 disconnect << dat.timespan
-              when dat.signalname == "ALARM"
+              when dat.value == "ALARM"
                 alarm << dat.timespan
-              when dat.signalname == "EMERGENCY"
+              when dat.value == "EMERGENCY"
                 emergency << dat.timespan
-              when dat.signalname == "STOP"
+              when dat.value == "STOP"
                 stop << dat.timespan
-              when dat.signalname == "SUSPEND"
+              when dat.value == "SUSPEND"
                 suspend << dat.timespan
-              when dat.signalname == "WARMUP"
+              when dat.value == "WARMUP"
                 warmup << dat.timespan
               end
             end

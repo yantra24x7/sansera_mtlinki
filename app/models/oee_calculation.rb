@@ -41,14 +41,14 @@ class OeeCalculation
       start_time = (date+" "+shift.start_time).to_time+1.day
       end_time = (date+" "+shift.end_time).to_time+1.day
     end
-
-    machines = L0Setting.pluck(:id, :L0Name)
+    machines = L0Setting.where(L0Name: "SDD-1104").pluck(:id, :L0Name)
     machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
+    byebug
     aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
     machines.each do |machine|
     prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true)
-    
+   byebug 
     ll = prog.select{|hh| hh.mainprog == hh.runningprog }
       
       #m_p_result = p_result.select{|m| m.L1Name == machine && m.updatedate > start_time}
@@ -72,10 +72,10 @@ class OeeCalculation
               pg_num = "NO PGM"
             end
           end
-            if ProductionPart.where(date: date, part_start_time: part.updatedate, part_end_time: part.enddate).present?  
-            else
+           # if ProductionPart.where(date: date, part_start_time: part.updatedate, part_end_time: part.enddate).present?  
+           # else
               ProductionPart.create(date: date, shift_num: shift.shift_no, machine_name: machine[1], part_count: part.productresult_accumulate, program_number: pg_num, part_start_time: part.updatedate, part_end_time: part.enddate, cycle_time: nil, cutting_time: nil, productname: part.productname, productresult: part.productresult.to_i, productresult_accumulate: part.productresult_accumulate, timespan: part.timespan, accept_count: 1, reject_count: nil, is_verified: false, l0_setting_id: machine[0], shift_id: shift.id)
-            end
+           # end
           #p_part_data << {date: date, shift_num: shift.shift_no, machine_name: machine[1], part_count: part.productresult_accumulate, program_number: pg_num, part_start_time: part.updatedate, part_end_time: part.enddate, cycle_time: nil, cutting_time: nil, productname: part.productname, productresult: part.productresult.to_i, productresult_accumulate: part.productresult_accumulate, timespan: part.timespan, accept_count: nil, reject_count: nil, is_verified: false, l0_setting_id: machine[0], shift_id: shift.id}
         end  
       end
@@ -148,7 +148,6 @@ class OeeCalculation
         warmup << dat.timespan
       end
     end
-    
     total_running_time = operate.sum + manual.sum + disconnect.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum
     bls = duration - total_running_time
     

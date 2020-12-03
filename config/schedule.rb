@@ -28,7 +28,7 @@ every 5.minutes do
 end
 
 
-every 30.minutes do
-  runner "OeeCalculation.live_report",:environment => :development
-end
+#every 30.minutes do
+#  runner "OeeCalculation.live_report",:environment => :development
+#end
  

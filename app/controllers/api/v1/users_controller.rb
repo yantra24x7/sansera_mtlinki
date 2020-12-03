@@ -50,14 +50,12 @@ module Api
 
       # DELETE /operators/1
       def destroy
-        byebug
         @user.destroy
         render json: "ok"
       end
 
 
       def test
-        byebug
         a = L0Setting.all.count
         render json: {key: "ok", value: a}
       end

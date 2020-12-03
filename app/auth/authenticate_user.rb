@@ -14,8 +14,9 @@ class AuthenticateUser
   private
 
   def user
-    
-    user = User.find_by(email: email)
+   #byebug 
+    #user = User.find_by(email: email)
+    user =  User.where(email: email).present? ? User.find_by(email: email): nil
     return user if user && BCrypt::Password.new(user.password) == password
     errors.add :user_authentication, 'invalid credentials'
     nil

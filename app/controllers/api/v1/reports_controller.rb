@@ -246,7 +246,7 @@ module Api
         shift_num = shift.shift_no.to_i - 1 
      end
      
-        date = date.to_date.strftime('%m/%d/%Y')
+        date = date.to_date.strftime('%d-%m-%Y')
         render json: {from_date: date,to_date: date,shift_num: shift_num}
     end
 
@@ -256,22 +256,51 @@ module Api
     end
 
     def production_part_report
-      st_time = params[:from_date].present? ? params[:from_date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')  
-      en_time =   params[:from_date].present? ? params[:from_date].split('-')[1] : (Date.today - 1).strftime('%m/%d/%Y') 
       
-      start_time = Date.strptime(st_time, '%m/%d/%Y')
-      end_time = Date.strptime(en_time, '%m/%d/%Y')
-      # start_time = params[:from_date].present? ? params[:from_date].to_date : Date.today - 1
-      # end_time = params[:to_date].present? ? params[:to_date].to_date : Date.today - 1
+      date = params[:from_date].to_date.to_s
+     if params["shift_num"] == "all"
+      start_time = (date+" "+Shift.first.start_time).to_time
+      if Shift.last.end_day == '2'
+       end_time = (date+" "+Shift.last.end_time).to_time+1.day
+      else
+       end_time = (date+" "+Shift.last.end_time).to_time
+      end
+     else
+     shift = Shift.find_by(shift_no: params["shift_num"])
+       case
+      when shift.start_day == '1' && shift.end_day == '1'
+        start_time = (date+" "+shift.start_time).to_time
+        end_time = (date+" "+shift.end_time).to_time
+      when shift.start_day == '1' && shift.end_day == '2'
+        if Time.now.strftime("%p") == "AM"
+          start_time = (date+" "+shift.start_time).to_time-1.day
+          end_time = (date+" "+shift.end_time).to_time
+        else
+          start_time = (date+" "+shift.start_time).to_time
+          end_time = (date+" "+shift.end_time).to_time+1.day
+        end
+      else
+        start_time = (date+" "+shift.start_time).to_time
+        end_time = (date+" "+shift.end_time).to_time
+      end
+     end
 
-      range = start_time.to_time..end_time.to_time
-      # machines = params[:machine_name].present? ? [params[:machine_name]] : L0Setting.pluck(:L0Name)
+
       machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
-      # shifts = params[:shift_num].present? ? [params[:shift_num]] : Shift.pluck(:shift_no)
-      shifts = params[:shift_num] == "all" ? Shift.pluck(:shift_no) : [params[:shift_num]]
-      
-      result = ProductionPart.where(date:range, :shift_num.in =>shifts, :machine_name.in => machines)
-      render json: result
+      result = ProductResultHistory.where(:L1Name.in => machines, :enddate.gte => start_time, :updatedate.lte => end_time)
+       result2 = result.select{|j| j["productresult"] != '0' && j["is_verified"] != true}
+     page = params[:page].present? ? params[:page] : 1
+     page_count = params[:per_page].present? ? params[:per_page] : 10
+    
+     result3_count = result2.count
+
+     if result3_count != 0
+     result3 = result2.paginate(:page => page, :per_page => page_count)
+     else
+     result3 = []
+     end
+    render json: {parts: result3, count: result3_count, date: date, shift: shift.shift_no}      
+    # render json: {data: result2, date: date, shift: shift.shift_no}
     end
 
      def idle_reason_report

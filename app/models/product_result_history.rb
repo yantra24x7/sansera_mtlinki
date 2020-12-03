@@ -12,8 +12,15 @@ class ProductResultHistory
     field :productname, type: String
     field :productresult, type: String
     field :productresult_accumulate, type: String
-   # field :Judge, type: String
-   # field :Error, type: String
-   # field :Warning, type: String
+    
+
+    field :cycle_time, type: Integer
+    field :cutting_time, type: Integer
+    field :program_number, type: String  
+    field :accept_count, type: Integer
+    field :reject_count, type: Integer
+    field :is_verified, type: Mongoid::Boolean
+
+    index({updatedate: 1, enddate: 1, productresult: 1 })
 
 end
