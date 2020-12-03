@@ -177,9 +177,9 @@ class Shift
       unless Delayed::Job.where(run_at: end_time + 2.minutes).present?
         OeeCalculation.delay(run_at: end_time + 2.minutes).report(date,shift.shift_no)
       end
-      unless Delayed::Job.where(run_at: end_time + 4.minutes).present?
-        Report.delay(run_at: end_time + 4.minutes).report_last(date,shift.shift_no)
-      end
+#      unless Delayed::Job.where(run_at: end_time + 4.minutes).present?
+#        Report.delay(run_at: end_time + 4.minutes).report_last(date,shift.shift_no)
+#      end
   
     end
  # end

@@ -21,8 +21,9 @@ class Report
   field :availability, type: Float
   field :perfomance, type: Float
   field :quality, type: Float
-  field :oee, type: Float
-  field :oee_data, type: Array
+  field :traget, type: Integer
+  field :actual, type: Integer
+  field :oee_data, type: Integer
   belongs_to :shift
 
   index({date: 1, shift_num: 1, machine_name: 1})

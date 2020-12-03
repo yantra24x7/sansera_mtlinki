@@ -348,7 +348,7 @@ module Api
 
 
        
-      render json: {first:  first, second: second, third: third } 
+      render json: {first:  first, second: second, third: third, time: Time.now.localtime } 
       end
     end
   		
