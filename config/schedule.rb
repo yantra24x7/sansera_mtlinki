@@ -19,13 +19,13 @@
 
 # Learn more: http://github.com/javan/whenever
 
-every 1.day, at: '12:10 am' do
-  runner "Shift.delayed_job", :environment => :development
-end
+#every 1.day, at: '12:10 am' do
+#  runner "Shift.delayed_job", :environment => :development
+#end
 
-every 5.minutes do
-  runner "CurrentStatus.current_shift_report",:environment => :development
-end
+#every 5.minutes do
+#  runner "CurrentStatus.current_shift_report",:environment => :development
+#end
 
 
 #every 30.minutes do

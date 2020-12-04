@@ -95,7 +95,7 @@ class Role
  		prog_final_list = pg_list.split("##")
  		m_p_result = p_result.select{|m| m.L1Name == machine[1] && m.productresult != '0'}.pluck(:id)
   	final_p_res = ProductResultHistory.where(:id.in => m_p_result)
-   #    byebug	
+       byebug	
        prog_final_list.each do |jj|
   		unless jj == [] 
  				ppg_no = jj.first[2].split("/").last
