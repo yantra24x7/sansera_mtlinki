@@ -23,9 +23,9 @@ class Role
     end
     machines = L0Setting.pluck(:id, :L0Name)
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
+    
     machines.each do |machine|
-      prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true).pluck(:updatedate,:enddate,:mainprog)
-
+      prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true).pluck(:updatedate,:enddate,:mainprog).reverse
       pg_list = []
       prog.each_with_index do |ii, j|
 		    case 
@@ -39,7 +39,7 @@ class Role
 		       pg_list << ii
 		    end
    		end
-   		prog_final_list = pg_list.split("#")
+   		prog_final_list = pg_list.split("##")
    		m_p_result = p_result.select{|m| m.L1Name == machine[1] && m.enddate < end_time && m.productresult != '0'}.pluck(:id)
     	final_p_res = ProductResultHistory.where(:id.in => m_p_result)
     	prog_final_list.each do |jj|
@@ -51,6 +51,7 @@ class Role
    		end
    		puts machine[1]
     end
+     ProductTime.last.update(last_time: p_result.last.updatedate)
   end
 
 
@@ -77,7 +78,8 @@ class Role
   machines = L0Setting.pluck(:id, :L0Name)
   p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
   machines.each do |machine|
-    prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true).pluck(:updatedate,:enddate,:mainprog) 
+    prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true).pluck(:updatedate,:enddate,:mainprog).reverse
+    
     pg_list = []
     prog.each_with_index do |ii, j|
 
@@ -93,9 +95,9 @@ class Role
 	    end
  		end
  		prog_final_list = pg_list.split("##")
- 		m_p_result = p_result.select{|m| m.L1Name == machine[1] && m.productresult != '0'}.pluck(:id)
+ 		m_p_result = p_result.select{|m| m.enddate < end_time &&  m.L1Name == machine[1] && m.productresult != '0'}.pluck(:id)
   	final_p_res = ProductResultHistory.where(:id.in => m_p_result)
-       byebug	
+       
        prog_final_list.each do |jj|
   		unless jj == [] 
  				ppg_no = jj.first[2].split("/").last
@@ -112,7 +114,7 @@ class Role
   	machines = L0Setting.pluck(:id, :L0Name)
   	p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
   	machines.each do |machine|
-	    prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true).pluck(:updatedate,:enddate,:mainprog)
+        prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true).pluck(:updatedate,:enddate,:mainprog).reverse
 	    pg_list = []
 	    prog.each_with_index do |ii, j|
 		    case 
@@ -140,5 +142,50 @@ class Role
 	 		puts final_p_res.count
 	  end
   end
+  
+
+def self.part_update_last_time
+  last_data = ProductTime.last
+  if last_data.present?
+   time = last_data.last_time
+  else
+    ProductTime.create(last_time: Time.now)
+    time = Time.now
+  end
+byebug
+    machines = L0Setting.pluck(:id, :L0Name)
+    p_result = ProductResultHistory.where(:enddate.gte => time)
+    machines.each do |machine|
+      prog = ProgramHistory.where(:enddate.gte => time, L1Name: machine[1], mainprogflg: true).pluck(:updatedate,:enddate,:mainprog).reverse
+      pg_list = []
+      prog.each_with_index do |ii, j|
+                    case
+                     when ii == prog[0]
+                      pg_list << ii
+                     when ii == prog[-1]
+                       pg_list << ii
+                     when pg_list[-1][-1] != ii[-1]
+                       pg_list << prog[j-1]
+                       pg_list << "##"
+                       pg_list << ii
+                    end
+                end
+                prog_final_list = pg_list.split("##")
+                m_p_result = p_result.select{|m| m.L1Name == machine[1] && m.productresult != '0'}.pluck(:id)
+                final_p_res = ProductResultHistory.where(:id.in => m_p_result)
+                                prog_final_list = pg_list.split("##")
+                m_p_result = p_result.select{|m| m.L1Name == machine[1] && m.productresult != '0'}.pluck(:id)
+        final_p_res = ProductResultHistory.where(:id.in => m_p_result)
+        prog_final_list.each do |jj|
+                unless jj == []
+                                ppg_no = jj.first[2].split("/").last
+                                up_data = final_p_res.where(:enddate.gte => jj.first[0].localtime, :updatedate.lte => jj.last[1].localtime)
+                                up_data.update_all(program_number: ppg_no)
+                        end
+                end
+                puts machine[1]
+    end  
+  ProductTime.last.update(last_time: p_result.last.updatedate)
+end
 
 end

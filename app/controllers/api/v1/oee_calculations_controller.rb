@@ -163,7 +163,7 @@ end
       end
      
     machines = L0Setting.pluck(:id, :L0Name)
-    check_status = CurrentStatus.last.data.first["first"]
+    check_status = CurrentStatus.last#data.first["first"]
     signals = L1PoolOpened.all
     oee_records = OeeCalculation.where(date: date, shift_num: shift.shift_no)
     quality_data1 = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
@@ -177,11 +177,20 @@ end
         signal1 = "STOP"
       end
       
-      live_das = check_status.select{|i| i["name"] == machine[1]}.first
-      signal1 = live_das["status"]
+      if (start_time..end_time).include?(check_status.up_time.localtime) 
+      live_das = check_status.data.first["first"].select{|i| i["name"] == machine[1]}.first
       run_time = live_das["ori_run_time"]
-      duration =(end_time - start_time).to_i
+      else 
       
+      machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], value: "OPERATE")
+      run_time = machine_logs.pluck(:timespan).sum.round
+      end 
+     duration =(end_time - start_time).to_i
+#byebug
+
+
+
+
       if run_time == 0
        availability = 0
       else
@@ -193,7 +202,7 @@ end
 
       if quality_data.present?
        total_count = quality_data.pluck(:productresult).map{|i| i.to_i}.sum
-       good_count = quality_data.select{|i| i["accept_count"] != 1}.pluck(:productresult).map{|i| i.to_i}.sum
+       good_count = quality_data.select{|i| i["accept_count"] == 1 || i["accept_count"] == nil}.pluck(:productresult).map{|i| i.to_i}.sum
        reject_count = quality_data.select{|i| i["accept_count"] == 2}.pluck(:productresult).map{|i| i.to_i}.sum
        quality = (good_count)/(total_count).to_f
       else
@@ -404,16 +413,17 @@ end
       end
     
      result = ProductResultHistory.where(:L1Name.in => [params[:machine]], :enddate.gte => start_time, :updatedate.lte => end_time)
-    
+                                                                         
+   
      if params[:status].present?
       if params[:status] == "nil"
        status = nil
       else
        status = params[:status].to_i
       end 
-      result2 = result.select{|j| j["productresult"] != '0' && j["accept_count"] == status}
+      result2 = result.select{|j| j["enddate"] < end_time && j["productresult"] != '0' && j["accept_count"] == status}
      else
-      result2 = result.select{|j| j["productresult"] != '0' && j["is_verified"] != true}
+      result2 = result.select{|j| j["enddate"] < end_time && j["productresult"] != '0' && j["is_verified"] != true}
      end
 
      page = params[:page].present? ? params[:page] : 1
@@ -464,10 +474,10 @@ end
       end
       t_date = Time.now
       quality_data = quality_data1.select{|i| i.L1Name == params[:machine] && i.updatedate < t_date && i.productresult != '0' }
-
+    
       if quality_data.present?
        total_count = quality_data.pluck(:productresult).map{|i| i.to_i}.sum
-       good_count = quality_data.select{|i| i["accept_count"] != 1}.pluck(:productresult).map{|i| i.to_i}.sum
+       good_count = quality_data.select{|i| i["accept_count"] == 1 || i["accept_count"] == nil}.pluck(:productresult).map{|i| i.to_i}.sum
        reject_count = quality_data.select{|i| i["accept_count"] == 2}.pluck(:productresult).map{|i| i.to_i}.sum
        quality = (good_count)/(total_count).to_f
       else

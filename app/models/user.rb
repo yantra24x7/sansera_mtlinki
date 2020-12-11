@@ -6,6 +6,7 @@ class User
    include Mongoid::Attributes::Dynamic
    include Mongoid::Paranoia
    #include ActiveModel::SecurePassword
+#   include Mongoid::Paranoia
    
    field :first_name, type: String
    field :last_name, type: String
@@ -15,6 +16,7 @@ class User
    field :dup_password, type: String
    field :isactive, type: Mongoid::Boolean
    field :deleted_at, type: DateTime
+   field :date, type: Date, default: Time.now
    
    validates :email, uniqueness: true
    validates :phone_no, uniqueness: true

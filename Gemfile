@@ -31,7 +31,6 @@ gem 'whenever', require: false
 gem 'delayed_job_mongoid'
 
 
-
 # Use soft delete for records
 gem 'mongoid_paranoia'
 

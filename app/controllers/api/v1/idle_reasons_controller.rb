@@ -70,7 +70,7 @@ module Api
 
         # Only allow a trusted parameter "white list" through.
         def idle_reason_params
-          params.require(:idle_reason).permit(:reason, :is_active)
+          params.require(:idle_reason).permit(:reason, :code, :is_active)
         end
     end
   end

@@ -33,8 +33,10 @@ class CurrentStatus
       duration = (end_time - start_time).to_i
       status = ['OPERATE', 'MANUAL','DISCONNECT','ALARM','EMERGENCY','STOP','SUSPEND','WARMUP']
      # machines = L0Setting.where(L0Name: "SDD-1104").pluck(:L0Name)
-       machines = L0Setting.pluck(:L0Name)
+      machines = L0Setting.pluck(:L0Name)
+     
       machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)     
+      
       machines.map do |mac|
           
           aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
@@ -247,7 +249,13 @@ class CurrentStatus
       status = ['OPERATE', 'MANUAL','DISCONNECT','ALARM','EMERGENCY','STOP','SUSPEND','WARMUP']
      # machines = L0Setting.where(L0Name: "SDD-1104").pluck(:L0Name)
       machines = L0Setting.pluck(:L0Name)
+    # abc = Time.now
       machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time, :value.in => status)     
+   #  xyz = Time.now
+    # byebug
+#     puts (xyz.to_i - abc.to_i)
+    # byebug
+
       active_machine_log = L1SignalPoolActive.where(:signalname.in => status, value: true)
       machines.map do |mac|
           
@@ -391,7 +399,7 @@ class CurrentStatus
        first << {
         utlization: c_run_time.round(0),
         name:bb[:machine],
-        status: bb[:status],
+       # status: bb[:status],
         run_time: c_run_time,
         stop: c_idle_time,
         disconnect: c_disconnect,

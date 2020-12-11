@@ -27,4 +27,12 @@ class L0Setting
    field :MTConnectUuid, type: String
    field :unit, type: String
    belongs_to :OperatorAllocation
+
+  def self.test
+   a = [{:a=>1, :b=>2}, {:a=>1, :b=>2}, {:a=>1, :b=>2}, {:a=>1, :b=>2}]
+   a.each do |aa|
+    byebug
+   end
+  end
+
 end

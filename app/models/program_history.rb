@@ -35,6 +35,7 @@ class ProgramHistory
     #machines = L0Setting.where(L0Name:'SDD-1104').pluck(:id,:L0Name)
     machines = L0Setting.pluck(:id,:L0Name)
     machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
+    byebug
     aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
     oee_data = OeeCalculation.where(date: date, shift_num: shift.shift_no)
@@ -111,12 +112,10 @@ class ProgramHistory
         final_rec.each do |tar_rec1|
          tar_rec_pg_no = tar_rec1["program_number"]
          tar_rec_run_rate = tar_rec1["run_rate"]
-     #byebug
          res_part = p_result.where(program_number: tar_rec_pg_no).pluck(:productresult).sum
          res_run_rate << res_part * tar_rec_run_rate
         end
       end
-
 
       target = rec_oee[0].target
       if run_time == 0
@@ -132,15 +131,22 @@ class ProgramHistory
         perfomance = 1.0
       end
     end 
-
-    total_count = production.pluck(:productresult).map(&:to_i).sum
+  # byebug    
+    total_pro_data = production.select{|i| i.L1Name == machine[1] && i.productresult != '0' }
+    if total_pro_data.present?
+    total_count = total_pro_data.pluck(:productresult).map(&:to_i).sum
     good_count =  production.select{|pp| pp.accept_count == nil || pp.accept_count == 1}.pluck(:productresult).map(&:to_i).sum
-    reject_count = production.select{|pp| pp.reject_count == 1}.pluck(:productresult).map(&:to_i).sum
+    reject_count = production.select{|pp| pp.accept_count == 2}.pluck(:productresult).map(&:to_i).sum
     quality = (good_count)/(total_count).to_f 
+    else
+    total_count = 0
+    good_count = 0
+    reject_count = 0
+    quality = 0
+    end
+
     availability = (utilisation)/(100).to_f
-    oee = (availability*perfomance*quality)*100
-   
-     
+    oee = (availability*perfomance*quality)*100   
       data << {
       date: date,
       shift_num: shift.shift_no,
@@ -167,10 +173,10 @@ class ProgramHistory
    data.each do |data1|
       unless Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).present?
         
-        report = Report.create(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time])
+        report = Report.create(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee], target: data1[:target], actual: data1[:actual])
       else  
         report = Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).last
-        report.update(run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time])   
+        report.update(run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee],target: data1[:target], actual: data1[:actual])   
       end
     end
   end

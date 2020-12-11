@@ -120,7 +120,6 @@ module Api
         date = Date.today.to_s
        # date = "25-08-2020"
         shift = Shift.current_shift
-        # date = (Date.today - 2.day).to_s    
        # shift = Shift.find_by(shift_no: 2)
         case
         when shift.start_day == '1' && shift.end_day == '1'
@@ -139,10 +138,41 @@ module Api
           end_time = (date+" "+shift.end_time).to_time
         end
         
-     #  byebug 
         cur_st = CurrentStatus.last
         if cur_st.start_time.localtime == start_time.localtime &&  cur_st.end_time.localtime == end_time.localtime
+        
+
+     m_name = cur_st.data.first["first"].pluck(:name)
+         col = []
+         m_name.each do |jj|
+         col << "MacroVar_605_path1_#{jj}"
+         end
+         status = L1PoolOpened.all
+         list_of_reasons = IdleReason.all
+         macros = L1SignalPoolActive.where(:signalname.in => col)
          
+          cur_st.data.first["first"].each do |dd|
+           colr = status.select{|i| i.L1Name == dd["name"]}
+           reason = macros.select{|i| i.L1Name == dd["name"]}
+           if colr.present?
+             case
+              when colr.first.value == "OPERATE"
+                dd[:status] = "OPERATE"
+              when colr.first.value == "DISCONNECT"
+                dd[:status] = "DISCONNECT"
+              else
+                dd[:status] = "STOP"
+                if reason.present?
+                sel_reason = list_of_reasons.select{|kk| kk.code == reason.first.value.to_i}
+                 dd[:reason] = sel_reason.first.reason
+                else
+                 dd[:reason] = "N/A"
+                end
+              end
+           else
+            status = "DISCONNECT"
+           end
+          end
           render json: cur_st.data.first
         else
        
@@ -150,28 +180,36 @@ module Api
         status = ['OPERATE', 'MANUAL','DISCONNECT','ALARM','EMERGENCY','STOP','SUSPEND','WARMUP']
         machines = L0Setting.pluck(:L0Name)
         machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)      
+        signals = L1PoolOpened.all
+        col = []
+         machines.each do |jj|
+         col << "MacroVar_605_path1_#{jj}"
+         end
+         
+         list_of_reasons = IdleReason.all
+         macros = L1SignalPoolActive.where(:signalname.in => col)
 
-        machines.map do |mac|
+         machines.map do |mac|
           aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
           other_data = aa.select{|ii| ii.L1Name == mac}
           machine_log = machine_logs.select{|kk| kk.updatedate >= start_time && kk.enddate <= end_time && kk.L1Name == mac}
-          #machine_log = machine_logs.where(:updatedate.gte => start_time, :enddate.lte => end_time, :L1Name => mac)
-          #other_data = machine_logs.where(L1Name: mac).not_in(id: machine_log.pluck(:id))
-          active_machine_log = L1SignalPoolActive.where(:signalname.in => status, value: true, L1Name: mac)
-          #byebug
-            
-            if machine_log.count == 0
-              status1 = 'DISCONNECT'
-            else
-              if machine_log.last.value == 'OPERATE'
-                status1 = 'OPERATE'
-              elsif machine_log.last.value == 'DISCONNECT'
-                status1 = 'DISCONNECT'
-              else
-                status1 = 'STOP'
-              end   
-            end
-            
+         #No DELETE ==>  active_machine_log = L1SignalPoolActive.where(:signalname.in => status, value: true, L1Name: mac)
+           
+     signal = signals.select{|j| j.L1Name == mac}.first.value
+     mac_reason = macros.select{|i| i.L1Name == mac}
+      if signal == "OPERATE"
+        status1 = "OPERATE"
+      elsif signal == "DISCONNECT"
+        status1 = 'DISCONNECT'
+      else
+        if mac_reason.present?
+        sel_reason = list_of_reasons.select{|kk| kk.code == mac_reason.first.value.to_i}
+        reason = sel_reason.first.reason
+        else
+         reason = "N/A"
+        end
+        status1 = "STOP"
+      end
           
             other_data.each do |torcher_data|
               case 
@@ -224,21 +262,23 @@ module Api
             run_time = operate.sum
             idle_time = (manual.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum)
             disconnect = (disconnect.sum + bls)
-
-              
+            
             data2 << {
               machine: mac,
               status: status1,
               run_time: ((run_time*100).round/duration.to_f).round(1),
               idle_time: ((idle_time*100).round/duration.to_f).round(1),
-              disconnect: ((disconnect*100).round/duration.to_f).round(1)
+              disconnect: ((disconnect*100).round/duration.to_f).round(1),
+              reason: reason
             }
+            
         end
         
 
 
         first = []
         data2.each do |bb|
+          f_reason = bb[:reason]
           hh = [bb[:run_time], bb[:idle_time], bb[:disconnect]]
           
           if hh.sum == 100.0
@@ -279,27 +319,18 @@ module Api
             end
           end
 
-
-
-         # first << {
-         #  utlization: bb[:run_time],
-         #  name:bb[:machine],
-         #  status: bb[:status],
-         #  run_time: bb[:run_time],
-         #  stop: bb[:idle_time],
-         #  disconnect: bb[:disconnect]
-         #  }
-         
+        # byebug
          first << {
+          
           utlization: c_run_time.round(0),
           name:bb[:machine],
           status: bb[:status],
           run_time: c_run_time,
           stop: c_idle_time,
-          disconnect: c_disconnect
+          disconnect: c_disconnect,
+          reason: f_reason
           }
         end
-        #byebug
         first = first.sort_by!(&:zip).reverse!
         second = {
           Machine: first.pluck(:name),
@@ -331,21 +362,11 @@ module Api
 
         end
         
-     #byebug
-
-       #  third = [
-       #   ["Running", ((first.pluck(:run_time).sum)/machines.count).round(1)],
-       #   ["Stop", ((first.pluck(:stop).sum)/machines.count).round(1)],
-       #   ["Disconnect", ((first.pluck(:disconnect).sum)  /machines.count).round(1)]     
-       # ]
-
          third = [
          ["Running",over_all_value[0]],
          ["Stop", over_all_value[1]],
          ["Disconnect", over_all_value[2]]     
        ]
-
-
 
        
       render json: {first:  first, second: second, third: third, time: Time.now.localtime } 
