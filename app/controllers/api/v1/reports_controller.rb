@@ -7,14 +7,13 @@ module Api
      end
      
      def overall_chart
+      
       st_time = params[:from_date].present? ? params[:from_date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')  
       en_time =   params[:from_date].present? ? params[:from_date].split('-')[1] : (Date.today - 1).strftime('%m/%d/%Y') 
       
       start_time = Date.strptime(st_time, '%m/%d/%Y')
       end_time = Date.strptime(en_time, '%m/%d/%Y')
-      # start_time = params[:from_date].present? ? params[:from_date].to_date : Date.today - 1
-      # end_time = params[:to_date].present? ? params[:to_date].to_date : Date.today - 1
-      
+       
       range = start_time.to_time..end_time.to_time
       # machines = params[:machine_name].present? ? [params[:machine_name]] : L0Setting.pluck(:L0Name)
       machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
@@ -242,17 +241,38 @@ module Api
         date = (Date.today - 1.day).to_s
         shift_num = Shift.last.shift_no
       else
-        date = Date.today .to_s
+        date = Date.today.to_s
         shift_num = shift.shift_no.to_i - 1 
      end
-     
-        date = date.to_date.strftime('%d-%m-%Y')
+     date = date.to_date.strftime('%m/%d/%Y')
         render json: {from_date: date,to_date: date,shift_num: shift_num}
-    end
+   end
 
     def machine_count
       total_count = L0Setting.count
-      render json: {total_count: total_count}
+      shift = Shift.current_shift
+      if shift.present?
+       if shift.start_day == "1" && shift.end_day == "1"
+       start_time = shift.start_time.to_time
+       end_time = shift.end_time.to_time
+     elsif shift.start_day == "1" && shift.end_day == "2"
+       start_time = shift.start_time.to_time
+       end_time = shift.end_time.to_time+1.day
+     else
+       shift_time = shift.start_time.to_time+1.day
+       end_time = shift.end_time.to_time+1.day
+     end
+       
+       if (start_time..end_time).include?(Time.now)
+       shift_data = true
+       else
+       shift_data = false
+       end
+      else
+       shift_data = false
+      end
+      
+      render json: {total_count: total_count, shift_data: shift_data}
     end
 
     def production_part_report

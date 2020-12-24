@@ -58,8 +58,8 @@ module Api
 
       # DELETE /idle_reasons/1
       def destroy
-        @idle_reason.destroy
-        render json: 'Reason Deleted'
+        status = @idle_reason.destroy
+        render json: {status: status}
       end
 
       private

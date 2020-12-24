@@ -26,19 +26,35 @@ class ReportSerializer < ActiveModel::Serializer
   end
   
   def availability
+    if object.availability.present?
     object.availability.round(2) * 100
+    else
+     0
+    end
   end
 
   def perfomance
+    if object.perfomance.present?
     object.perfomance.round(2) * 100
+    else
+     0
+    end
   end
  
   def quality
+   if object.quality.present?
    object.perfomance.round(2) * 100
+   else
+   0
+   end
   end
   
   def oee
+    if object.oee.present?
    (object.perfomance * object.quality * object.availability).round(2) * 100
+    else
+     0
+    end
   end
 
 end

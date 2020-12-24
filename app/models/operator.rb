@@ -8,6 +8,9 @@ class Operator
   field :isactive, type: Mongoid::Boolean
   field :deleted_at, type: DateTime
 
+  validates :operator_spec_id, uniqueness: true
+  validates :operator_name, :operator_spec_id, presence: true
+
 
   def self.live_report
     data = []

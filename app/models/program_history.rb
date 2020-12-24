@@ -35,11 +35,11 @@ class ProgramHistory
     #machines = L0Setting.where(L0Name:'SDD-1104').pluck(:id,:L0Name)
     machines = L0Setting.pluck(:id,:L0Name)
     machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
-    byebug
+#    byebug
     aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
     oee_data = OeeCalculation.where(date: date, shift_num: shift.shift_no)
-   
+ #   byebug 
     machines.each do |machine|
       production = p_result.select{|m| m.L1Name == machine[1] && m.enddate < end_time && m.productresult != '0'}  
       p_part_data = []

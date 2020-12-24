@@ -7,8 +7,15 @@ class Shift
   field :shift_no, type: String
   field :start_day, type: String
   field :end_day, type: String
+  field :break_time, type: Integer
+  field :total_time, type: Integer
+  field :actual_hour, type: Integer
   # belongs_to :OperatorAllocation
   has_many :reports
+
+  validates :start_time, :end_time, :total_hour, :shift_no, :start_day, :end_day, :break_time, presence: true
+
+
 
 
   def self.current_shift

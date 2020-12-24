@@ -1,5 +1,6 @@
 class AlarmHistory
    include Mongoid::Document
+   include Mongoid::Search
    # include Mongoid::Timestamps
    store_in collection: "Alarm_History"
 
@@ -11,6 +12,9 @@ class AlarmHistory
    field :enddate, type: DateTime # Date
    field :level, type: Integer
    field :type, type: String
-   field :timespan, type: Float #Integer
+   field :timespan, type: Float #Integeri
+   
+   search_in :L0Name, :message, :updatedate, :enddate
+  # search_in :message, index: :_unit_keywords
 
 end

@@ -29,7 +29,7 @@ gem 'activemodel-serializers-xml'
 gem 'active_model_serializers'
 gem 'whenever', require: false
 gem 'delayed_job_mongoid'
-
+gem 'mongoid_search'
 
 # Use soft delete for records
 gem 'mongoid_paranoia'

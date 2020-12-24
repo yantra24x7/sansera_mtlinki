@@ -1,6 +1,10 @@
 class Role
   include Mongoid::Document
   field :role_name, type: String
+  validates :role_name, uniqueness: true  
+
+
+ 
    def self.part_update_live
   	date = Date.today.strftime("%d-%m-%Y")  
     shift = Shift.current_shift

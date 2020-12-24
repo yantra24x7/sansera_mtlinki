@@ -25,7 +25,7 @@ class ProductionPart
   belongs_to :shift
   belongs_to :l0_setting, optional: true
 
-  index({ date: 1, part_start_time: 1, part_end_time: 1, machine_name: 1 }, {unique: true})  
+#  index({ date: 1, part_start_time: 1, part_end_time: 1, machine_name: 1 }, {unique: true})  
 
    def self.live_report
     data = []

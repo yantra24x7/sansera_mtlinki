@@ -2,12 +2,43 @@ module Api
   module V1
   	class UsersController < ApplicationController
       before_action :set_operator, only: [:show, :update, :destroy]
-      skip_before_action :authenticate_request, only: %i[user_signup login identify_user verify_user password_updation tab_machine_list]
+      skip_before_action :authenticate_request, only: %i[tenant_creation check_status user_signup login identify_user verify_user password_updation tab_machine_list]
 
+      def check_status
+       if Tenant.all.present?
+        status = true
+       else
+        status = false
+       end
+       render json: status
+      end
+
+      def tenant_creation
+        Role.create(role_name: "Admin")
+        Role.create(role_name: "Supervisor")
+        Role.create(role_name: "QA")
+
+        user = User.create(first_name: params[:first_name], last_name: params[:last_name], email: params[:email], password: params[:password], phone_no:params[:phone_no] , dup_password: nil, isactive: true, role: "Admin")
+       if User.last.email == params[:email]
+        Tenant.create(tenant_name: params[:tenant_name], address_line1: params[:address_line1], address_line2: params[:address_line2], city: params[:city], state: params[:state], country: params[:country], pincode: params[:pincode])
+        status = true
+       else
+        status = false
+       end
+       render json: status       
+        end
 
       def index
-        @users = User.all
-        render json: @users
+      #  @users = User.all
+      #  render json: @users
+
+          page = params[:page].present? ? params[:page] : 1
+          page_count = params[:per_page].present? ? params[:per_page] :10
+          users = User.all
+          user_list = users.paginate(:page => page, :per_page => page_count)
+          render json: {user_list: user_list, user_count: users.count}
+
+
       end
 
       def tab_machine_list
@@ -25,7 +56,7 @@ module Api
       def user_signup
         # @user = User.new(user_params)
         # @user = User.new(email: params[:email], password: params[:password])
-        @user = User.new(first_name: params[:first_name], last_name: params[:last_name], email: params[:email], password: params[:password], phone_no: params[:phone_no], dup_password: params[:password], isactive: false)
+        @user = User.new(first_name: params[:first_name], last_name: params[:last_name], email: params[:email], password: params[:password], phone_no: params[:phone_no], dup_password: params[:password], role: params[:role],  isactive: false)
         if @user.save
           render json: @user#, status: :created, location: @user
         else
@@ -40,8 +71,8 @@ module Api
 
       # PATCH/PUT /users/1
       def update
-  # buebug
-        if @user.update(user_params)
+
+        if @user.update(first_name: params[:first_name], last_name: params[:last_name], email: params[:email], phone_no: params[:phone_no], role: params[:role])
           render json: @user
         else
           render json: @user.errors, status: :unprocessable_entity
@@ -50,8 +81,8 @@ module Api
 
       # DELETE /operators/1
       def destroy
-        @user.destroy
-        render json: "ok"
+        status = @user.destroy
+        render json: {status: status}
       end
 
 
@@ -103,14 +134,23 @@ module Api
         end
 
         def authenticate(email, password)
-            command = AuthenticateUser.call(email, password)  
+            command = AuthenticateUser.call(email, password) 
+         # byebug 
             if command.success?
               user_id = JsonWebToken.decode(command.result)["user_id"]
               user = User.find(user_id)
+              roles = Role.pluck(:role_name)
+              tenant = Tenant.first
+              if roles.include?(user.role) && tenant.present?
               render json: {
                 access_token: command.result,
+                role: user.role,
+                tenant: tenant.tenant_name,
                 message: 'Login Successful'
               }
+            else
+             render json: false
+            end
             else
               render json: false#{ error: command.errors }, status: :unauthorized
             end

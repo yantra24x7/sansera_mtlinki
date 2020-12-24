@@ -5,10 +5,23 @@ module Api
 
 		  # GET /operators
 		  def index
-		    @operators = Operator.all
+#		    @operators = Operator.all
 
-		    render json: @operators
+#		    render json: @operators
+                     page = params[:page].present? ? params[:page] : 1
+          page_count = params[:per_page].present? ? params[:per_page] :10
+          operators = Operator.all
+          operator_list = operators.paginate(:page => page, :per_page => page_count)
+          render json: {operator_list: operator_list, operator_count: operators.count}
+
+
 		  end
+
+                  def operator_list
+                    @operators = Operator.all
+
+                   render json: @operators
+                  end
 
 		  # GET /operators/1
 		  def show
@@ -20,9 +33,9 @@ module Api
 		    @operator = Operator.new(operator_params)
 
 		    if @operator.save
-		      render json: @operator, status: :created, location: @operator
+		      render json: @operator#, status: :created, location: @operator
 		    else
-		      render json: @operator.errors, status: :unprocessable_entity
+		      render json: @operator.errors#, status: :unprocessable_entity
 		    end
 		  end
 
@@ -37,7 +50,8 @@ module Api
 
 		  # DELETE /operators/1
 		  def destroy
-		    @operator.destroy
+		    status = @operator.destroy
+                    render json: {status: status}
 		  end
 
 		  private

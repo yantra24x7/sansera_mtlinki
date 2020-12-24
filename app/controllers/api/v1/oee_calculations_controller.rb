@@ -213,6 +213,7 @@ end
       end
 
       rec_oee = oee_records.select{|k| k[:machine_name] == machine[1]}
+     
       if rec_oee.present?
         target = rec_oee[0].target
       else
@@ -461,7 +462,7 @@ end
       end
     
      check_status = CurrentStatus.last.data.first["first"]
-     oee_records = OeeCalculation.where(date: date, shift_num: shift.shift_no, machine: params[:machine])
+     oee_records = OeeCalculation.where(date: date, shift_num: shift.shift_no, machine_name: params[:machine])
      quality_data1 = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
      live_das = check_status.select{|i| i["name"] == params[:machine]}.first
       signal1 = live_das["status"]
@@ -489,6 +490,7 @@ end
 
 
        rec_oee = oee_records.select{|k| k[:machine_name] == params[:machine]}
+      
       if rec_oee.present?
         target = rec_oee[0].target
       else
@@ -543,6 +545,7 @@ end
 
   # POST /oee_calculations
   def create
+    
     @oee_calculation = OeeCalculation.new(oee_calculation_params)
     @oee_calculation.date = params[:date].to_time.localtime
     if @oee_calculation.save

@@ -1,14 +1,34 @@
 Rails.application.routes.draw do
 
-  
+ 
   # For details on the DSL available within this file, see http://guides.rubyonrails.org/routing.html
   namespace :api, defaults: {format: 'json'} do
       namespace :v1 do
+      # -- Login -- #
+      post 'login' => 'users#login'
+      get 'machine_count' => 'reports#machine_count'
+      get 'check_status' => 'users#check_status'
+      post 'tenant_creation' => 'users#tenant_creation'
 
+
+      # -- Machine -- #
+      post 'machine_update' => 'machines#machine_update'
+      get 'notification_setting' => 'machines#notification_setting'
+      post 'add_notification_settings'=> 'machines#add_notification'
+      put  'update_notification' => 'machines#update_notification'
+      get 'change_status' => 'machines#change_status_notification'
+
+      # -- Component -- #     
+      put 'component_time' => 'components#component_time'
+      get 'component_list' => 'components#component_list'
+
+      # -- Operator -- #
+      get 'operator_list' => 'operators#operator_list'
+      
 
       # 01 -----> USER AND PASSWORD START <----- #         
       	post 'user_signup', to: 'users#user_signup'
-        post 'login' => 'users#login'
+       # post 'login' => 'users#login'
         get 'verify_user', to: 'users#verify_user'
         get 'password_updation', to: 'users#password_updation'
       # -----> END <----- #      
@@ -17,7 +37,7 @@ Rails.application.routes.draw do
       # 03 -----> DASHBOARD LMW <----- #
         get 'machines_status' => 'details#all_machine_current_status'
         get 'get_machine_status' => 'details#lmw_dashboard'
-        get 'get_machine_status2' => 'details#lmw_dashboard2'
+        get 'get_machine_status2' => 'details#lmw_dashboard3'
       # -----> END <----- #
 
         get 'alarm_histories', to: 'alarm_histories#index'
@@ -40,7 +60,7 @@ Rails.application.routes.draw do
         get 'compare_report' => 'reports#compare_report'
         get 'overall_chart' => 'reports#compare_report1'
         get 'previous_shift' => 'reports#previous_shift'
-        get 'machine_count' => 'reports#machine_count'
+     #   get 'machine_count' => 'reports#machine_count'
         get 'production_part_report' => 'reports#production_part_report'
         get 'idle_reason_report' => 'reports#idle_reason_report'
 
@@ -59,6 +79,12 @@ Rails.application.routes.draw do
         get 'live_oee_tab' => 'oee_calculations#live_oee_tab'
         get 'kpy_dashboard'=>'oee_calculations#kpy'
 
+        post 'machine_update' => 'machines#machine_update'
+        get 'notification_setting' => 'machines#notification_setting'
+        post 'add_notification_settings'=> 'machines#add_notification'
+        put  'update_notification' => 'machines#update_notification'
+
+        resources :components
         resources :oee_calculations        
         resources :idle_reasons
         resources :operator_mapping_allocations

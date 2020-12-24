@@ -5,12 +5,24 @@ module Api
 	   
 	    def index
 	    	page = params[:page].present? ? params[:page] : 1
-	    	page_count = params[:per_page].present? ? params[:per_page] : 10
-	    	alarms_count = AlarmHistory.count
-	    	alarms = AlarmHistory.all.paginate(:page => page, :per_page => page_count)
+             
+	    	page_count = params[:per_page].present? ? params[:per_page] :10
+                search_value =  params[:search].present? ? params[:search] : ""
+             
+               if params[:search] == ""
+                 all_alarms = AlarmHistory.all
+                else
+                 all_alarms = AlarmHistory.full_text_search(search_value)
+                end
+
+               # all_alarms = AlarmHistory.full_text_search(search_value)    
+        	#alarms_count = AlarmHistory.cou
+               # alarms = AlarmHistory.all.paginate(:page => page, :per_page => page_count)
+                alarms = all_alarms.paginate(:page => page, :per_page => page_count)
 	    	alarm = alarms.map{|i| [id: i["id"], L0Name: i["L0Name"], L1Name: i["L1Name"], enddate: i["enddate"], level: i["level"], message: i["message"], number: i["number"], timespan: "#{Time.at(i["timespan"]).utc.strftime("%H:%M:%S")}", type: i["type"], updatedate: i["updatedate"]]}
 	    	alarm.flatten!
-	    	render json: {alarm_histories: alarm, alarms_count: alarms_count}
+	    #	render json: {alarm_histories: alarm, alarms_count: alarms_count}
+                render json: {alarm_histories: alarm, alarms_count: all_alarms.count}
 	    end
 
 	    def machine_wise_alarm

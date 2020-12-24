@@ -17,12 +17,14 @@ class User
    field :isactive, type: Mongoid::Boolean
    field :deleted_at, type: DateTime
    field :date, type: Date, default: Time.now
+   field :role, type: String
    
-   validates :email, uniqueness: true
-   validates :phone_no, uniqueness: true
-   before_save :encrypt_password
-
+   validates :email, :phone_no, uniqueness: true
+   validates :first_name, :last_name, :email, :role,:phone_no, :password, presence: true
+   before_create :encrypt_password
+  
    def self.authenticate(email, password)
+   byebug
      user = User.find_by(email: email)
      if user && BCrypt::Password.new(user.password) == password
        user
@@ -30,7 +32,7 @@ class User
        nil
      end
   end
-
+ 
   def encrypt_password
     if password.present?
       #self.password_hash = BCrypt::Engine.hash_secret(password)

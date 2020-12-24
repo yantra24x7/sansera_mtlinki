@@ -25,14 +25,7 @@ class L0Setting
    field :RobotController, type: Integer
    field :MTConnectDeviceName, type: String
    field :MTConnectUuid, type: String
-   field :unit, type: String
-   belongs_to :OperatorAllocation
-
-  def self.test
-   a = [{:a=>1, :b=>2}, {:a=>1, :b=>2}, {:a=>1, :b=>2}, {:a=>1, :b=>2}]
-   a.each do |aa|
-    byebug
-   end
-  end
-
+   field :line, type: String
+#   belongs_to :OperatorAllocation
+   has_one :notification_setting
 end
