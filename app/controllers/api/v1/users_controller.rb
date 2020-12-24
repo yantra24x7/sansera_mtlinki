@@ -2,7 +2,7 @@ module Api
   module V1
   	class UsersController < ApplicationController
       before_action :set_operator, only: [:show, :update, :destroy]
-      skip_before_action :authenticate_request, only: %i[user_signup login identify_user verify_user password_updation tab_machine_list]
+      skip_before_action :authenticate_request, only: %i[index user_signup login identify_user verify_user password_updation tab_machine_list]
 
 
       def index

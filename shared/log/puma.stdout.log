@@ -324,3 +324,6 @@ Exiting
 [1417] * Starting control server on unix:///tmp/puma-status-1603199725897-1417
 [1417] - Worker 1 (pid: 1944) booted, phase: 0
 [1417] - Worker 0 (pid: 1940) booted, phase: 0
+=== puma startup: 2020-12-22 07:32:20 +0530 ===
+[2780] * Starting control server on unix:///tmp/puma-status-1608602540539-2780
+Exiting

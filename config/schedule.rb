@@ -5,8 +5,8 @@
 
 # Example:
 #
-# set :output, "/path/to/my/cron_log.log"
-#
+set :output, "log/cron.log"
+env :PATH, ENV['PATH']
 # every 2.hours do
 #   command "/usr/bin/some_great_command"
 #   runner "MyModel.some_method"
@@ -23,8 +23,8 @@
 #  runner "Shift.delayed_job", :environment => :development
 #end
 
-#every 5.minutes do
-#  runner "CurrentStatus.current_shift_report",:environment => :development
+#every 1.minutes do
+#  runner "CurrentStatus.current_shift_report", :environment => :development
 #end
 
 

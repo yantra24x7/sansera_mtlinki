@@ -6,7 +6,7 @@ module Api
 
       def list_of_idel
         @idle_reasons = IdleReason.all
-
+# 	@idle_reasons = {status: true, message: "success"}
         render json: @idle_reasons
       end
 
