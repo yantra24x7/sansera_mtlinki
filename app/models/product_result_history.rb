@@ -12,7 +12,7 @@ class ProductResultHistory
     field :resultflag, type: Boolean
     field :productserialnumber, type: String
     field :productname, type: String
-    field :productresult, type: String
+    field :productresult, type: Integer
     field :productresult_accumulate, type: String
     field :cycle_time, type: Integer
     field :cutting_time, type: Integer

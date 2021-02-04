@@ -1,3 +1,4 @@
+
 class L1SignalPoolActive
    include Mongoid::Document
    include Mongoid::Timestamps
@@ -40,7 +41,6 @@ class L1SignalPoolActive
     bls = machines - machine_log.keys
     mer_req = bls.map{|i| [i,[]]}.to_h
     machine_logs = machine_log.merge(mer_req)
-
  machine_logs.each do |key, value|   
    puts key
     operate = []
@@ -51,7 +51,6 @@ class L1SignalPoolActive
     stop = []
     suspend = []
     warmup = []
-byebug
  if value.count == 0
   value << L1Pool.new(updatedate: start_time, enddate: end_time, timespan: duration, value: "DISCONNECT") 
  elsif value.count == 1
@@ -99,6 +98,8 @@ end
         warmup << v.pluck(:timespan).sum
       end
  end
+
+
     total_running_time = operate.sum + manual.sum + disconnect.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum
     bls = duration - total_running_time
     run_time = operate.sum

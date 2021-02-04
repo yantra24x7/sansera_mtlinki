@@ -28,4 +28,5 @@ class L0Setting
    field :line, type: String
 #   belongs_to :OperatorAllocation
    has_one :notification_setting
+   index({line: 1, L0Name: 1})
 end

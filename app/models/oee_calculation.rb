@@ -43,12 +43,12 @@ class OeeCalculation
     end
     machines = L0Setting.where(L0Name: "SDD-1104").pluck(:id, :L0Name)
     machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
-    byebug
+    
     aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
     machines.each do |machine|
     prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true)
-   byebug 
+   
     ll = prog.select{|hh| hh.mainprog == hh.runningprog }
       
       #m_p_result = p_result.select{|m| m.L1Name == machine && m.updatedate > start_time}
@@ -181,7 +181,7 @@ class OeeCalculation
   #  end
   #  end
     
-    
+byebug    
 
     data.each do |data1|
       unless Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).present?
