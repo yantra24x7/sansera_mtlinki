@@ -83,6 +83,11 @@ Rails.application.routes.draw do
         get 'notification_setting' => 'machines#notification_setting'
         post 'add_notification_settings'=> 'machines#add_notification'
         put  'update_notification' => 'machines#update_notification'
+        # ----- Rabwin  ------#
+        
+        get 'r_get_status' => "machines#r_get_status"        
+        get 'line_wise_dashboards' => 'machines#line_wise_dashboard'
+        get 'live_machine_detail' => 'machines#live_machine_detail'
 
         resources :components
         resources :oee_calculations        

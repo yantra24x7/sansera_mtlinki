@@ -6,7 +6,13 @@ class CurrentStatus
   field :end_time, type: DateTime
   field :data, type: Array
   field :up_time, type: DateTime
-
+ 
+  field :r_date, type: Date
+  field :r_shift_num, type: Integer
+  field :r_start_time, type: DateTime
+  field :r_end_time, type: DateTime
+  field :r_data, type: Array
+  field :r_up_time, type: DateTime
 
    def self.current_shift_report
       data2 = [] 

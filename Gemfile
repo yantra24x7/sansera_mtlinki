@@ -16,6 +16,8 @@ gem "bcrypt-ruby", :require => "bcrypt"
 gem 'jwt'
 gem 'simple_command'
 gem 'mongo'
+gem 'sidekiq', '~>6.0.0'
+
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 # gem 'jbuilder', '~> 2.5'
 # Use Redis adapter to run Action Cable in production

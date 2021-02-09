@@ -49,9 +49,15 @@ module Api
                 dd[:status] = "DISCONNECT"
               else
                 dd[:status] = "STOP"
+               
                 if reason.present?
                 sel_reason = list_of_reasons.select{|kk| kk.code == reason.first.value.to_i}
-                 dd[:reason] = sel_reason.first.reason
+                  if sel_reason == []
+                   dd[:reason] = "N/A"
+                  else
+                   dd[:reason] = sel_reason.first.reason
+                  end
+#                 dd[:reason] = sel_reason.first.reason
                 else
                  dd[:reason] = "N/A"
                 end
@@ -66,6 +72,7 @@ module Api
 #=======================Start=================#
 
     machines = L0Setting.pluck(:L0Name)
+    mac_with_line = L0Setting.pluck(:L0Name, :line).group_by(&:first)
     machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
     bls = machines - machine_log.keys
     mer_req = bls.map{|i| [i,[]]}.to_h
@@ -124,9 +131,9 @@ end
           idle_time = (manual.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum)
           disconnect = (disconnect.sum + bls)
 
-
           data2 << {
             machine: key,
+            line:  mac_with_line[key].first[1],
             status: "OPERATE",
             run_time: ((run_time*100).round/duration.to_f).round(1),
             idle_time: ((idle_time*100).round/duration.to_f).round(1),
@@ -180,6 +187,7 @@ end
      first << {
         utlization: c_run_time.round(0),
         name:bb[:machine],
+        line:bb[:line],
        # status: bb[:status],
         run_time: c_run_time,
         stop: c_idle_time,
@@ -262,9 +270,14 @@ end
                 dd[:status] = "DISCONNECT"
               else
                 dd[:status] = "STOP"
+                
                 if reason.present?
                 sel_reason = list_of_reasons.select{|kk| kk.code == reason.first.value.to_i}
-                 dd[:reason] = sel_reason.first.reason
+                  if sel_reason == []
+                   dd[:reason] = "N/A"
+                  else
+                   dd[:reason] = sel_reason.first.reason
+                  end
                 else
                  dd[:reason] = "N/A"
                 end
