@@ -42,6 +42,7 @@ class CurrentStatus
       duration = (end_time - start_time).to_i
       status = ['OPERATE', 'MANUAL','DISCONNECT','ALARM','EMERGENCY','STOP','SUSPEND','WARMUP']
      # machines = L0Setting.where(L0Name: "SDD-1104").pluck(:L0Name)
+      mac_with_line = L0Setting.pluck(:L0Name, :line).group_by(&:first)
       machines = L0Setting.pluck(:L0Name)
     # abc = Time.now
       machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time, :value.in => status)     
@@ -140,6 +141,7 @@ class CurrentStatus
      
           data2 << {
             machine: mac,
+            line: mac_with_line[mac].first[1],
             status: status1,
             run_time: ((run_time*100).round/duration.to_f).round(1),
             idle_time: ((idle_time*100).round/duration.to_f).round(1),
@@ -193,6 +195,7 @@ class CurrentStatus
        first << {
         utlization: c_run_time.round(0),
         name:bb[:machine],
+        line:bb[:line],
        # status: bb[:status],
         run_time: c_run_time,
         stop: c_idle_time,

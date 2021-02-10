@@ -165,9 +165,9 @@ module Api
 
      tot_tar = compiled_component.pluck(:tar).sum
         act_tar = compiled_component.pluck(:actual).sum
-#byebug
 
-render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operator: operator}
+
+render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operator: operator, line: params[:line], machine: params[:machine], run_time: params[:run_time], stop: params[:stop], diconnect: params[:disconnect], utlization: params[:utlization]}
 
    end
 
@@ -195,7 +195,7 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
         end
         duration  = (end_time - start_time).to_i
         cur_st1 = CurrentStatus.last
-        
+       
         if cur_st1.present? && cur_st1.start_time.localtime == start_time.localtime &&  cur_st1.end_time.localtime == end_time.localtime && params[:live] != "true"        
          m_name = cur_st1.data.first["first"].pluck(:name)
          col = []
@@ -206,7 +206,6 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
          status = L1PoolOpened.all
          list_of_reasons = IdleReason.all
          macros = L1SignalPoolActive.where(:signalname.in => col)
-
           #cur_st.data.first["first"].each do |dd|
          cur_st = cur_st1.data.first[:first].select{|li| li[:line] == params[:line]}
          cur_st.each do |dd|
