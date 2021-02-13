@@ -42,7 +42,12 @@ class CurrentStatus
       duration = (end_time - start_time).to_i
       status = ['OPERATE', 'MANUAL','DISCONNECT','ALARM','EMERGENCY','STOP','SUSPEND','WARMUP']
      # machines = L0Setting.where(L0Name: "SDD-1104").pluck(:L0Name)
-      mac_with_line = L0Setting.pluck(:L0Name, :line).group_by(&:first)
+     # mac_with_line = L0Setting.pluck(:L0Name, :line).group_by(&:first)
+     # byebug
+      mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+      mac_with_line = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by(&:first)
+
+
       machines = L0Setting.pluck(:L0Name)
     # abc = Time.now
       machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time, :value.in => status)     
@@ -52,8 +57,12 @@ class CurrentStatus
     # byebug
 
       active_machine_log = L1SignalPoolActive.where(:signalname.in => status, value: true)
-      machines.map do |mac|
-          
+      machines.each do |mac|
+#         if mac == 'ELECTRICAL-C84'
+#         byebug
+#         end          
+             
+               
           aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
           other_data = aa.select{|ii| ii.L1Name == mac}
           machine_log = machine_logs.select{|kk| kk.updatedate >= start_time && kk.enddate <= end_time && kk.L1Name == mac}
@@ -137,7 +146,7 @@ class CurrentStatus
           disconnect = (disconnect.sum + bls)
 
             puts mac
-           
+          
      
           data2 << {
             machine: mac,

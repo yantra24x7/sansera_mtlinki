@@ -25,12 +25,8 @@ class L0Setting
    field :RobotController, type: Integer
    field :MTConnectDeviceName, type: String
    field :MTConnectUuid, type: String
-   field :line, type: String, default: -> { self.L0EnName.split('-').first}
-#   field :line, type: String
+   field :line, type: String
 #   belongs_to :OperatorAllocation
    has_one :notification_setting
    index({line: 1, L0Name: 1})
-   
-  # field :default, type: Integer, default: -> { (self.enddate).to_i - (self.updatedate).to_i}
-  # field :line, type: String, default: -> { self.L0EnName.split('-').first}
 end

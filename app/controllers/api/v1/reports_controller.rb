@@ -5,7 +5,16 @@ module Api
       machine = L0Setting.pluck(:L0Name)
       render json: machine
      end
-     
+     def idle_report
+       
+       machine = params[:machine]#Machine.where(id: params[:machine_id]).ids
+       date = params[:date].to_date.strftime("%Y-%m-%d")
+       shift = params[:shift]#Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
+       idle_report = IdleReasonActive.where(date: date.to_time, shift_no: shift, machine_name: machine)
+       render json: idle_report
+  #  data = CncHourReport.where(date: date, machine_id: machine, shift_no: shift)
+
+     end     
      def overall_chart
       
       st_time = params[:from_date].present? ? params[:from_date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')  

@@ -32,7 +32,9 @@ class L1SignalPool
       end_time = (date+" "+shift.end_time).to_time+1.day
     end
     duration = (end_time - start_time).to_i
-    machines = L0Setting.pluck(:L0Name, :line)
+    #machines = L0Setting.pluck(:L0Name, :line)
+    mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+    machines = mac_list.map{|i| [i[0], i[1].split('-').first]}    
     
     key_list = []
     machines.each do |jj|
@@ -44,7 +46,9 @@ class L1SignalPool
     key_value = L1SignalPoolActive.where(:signalname.in => key_list)
     components = Component.all
 
-     final_data = []
+#777#
+
+   final_data = []
      machines.each do |key|
       puts "-----------------------"
       puts "---**---#{key[0]}---**----"
@@ -106,6 +110,13 @@ class L1SignalPool
 
       if tr_data.present?
       if tr_data.count == 1
+
+
+
+
+#888#
+
+   
       run_compinent = tr_data.first[:comp_id].to_i
       sel_comp = components.select{|u| u.spec_id == run_compinent && u.L0_name == key[0]}
        if sel_comp.present?

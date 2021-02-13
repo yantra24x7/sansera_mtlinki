@@ -88,6 +88,7 @@ Rails.application.routes.draw do
         get 'r_get_status' => "machines#r_get_status"        
         get 'line_wise_dashboards' => 'machines#line_wise_dashboard'
         get 'live_machine_detail' => 'machines#live_machine_detail'
+        get 'idle_reports' => 'reports#idle_report'
 
         resources :components
         resources :oee_calculations        

@@ -6,7 +6,8 @@ module Api
 
         date = Date.today.to_s
         shift = Shift.current_shift
-        case
+
+                case
         when shift.start_day == '1' && shift.end_day == '1'
           start_time = (date+" "+shift.start_time).to_time
           end_time = (date+" "+shift.end_time).to_time
@@ -26,6 +27,8 @@ module Api
         duration  = (end_time - start_time).to_i
         machine = params[:machine]
         line = params[:line]
+
+
         cur_st = CurrentStatus.last
         eff_data = cur_st.r_data.select{|kk| kk[:line] == line}
         if eff_data.present?
@@ -36,15 +39,19 @@ module Api
         components = Component.all
         operators = Operator.all
         p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
-        sig_parms = L1SignalPool.all
+        
+      #  sig_parms = L1SignalPool.where(L1Name: machine)
         root_card = "MacroVar_751_path1_#{machine}"
         op_id = "MacroVar_750_path1_#{machine}"
         key_list = ["MacroVar_604_path1_#{machine}"]
         servo_temp = ["ServoTemp_0_path1_#{machine}", "ServoTemp_1_path1_#{machine}", "ServoTemp_2_path1_#{machine}"]  
-        sv_temp = []
-        servo_temp.each do |tem|
-         
-        end  
+        servo_load = ["ServoLoad_0_path1_#{machine}", "ServoLoad_1_path1_#{machine}"]
+        spendle_load = ["SpindleLoad_0_path1_#{machine}"]
+        
+        sig_parms = L1SignalPoolActive.where(L1Name: machine)#, signalname: servo_load)
+        sv_load = sig_parms.where(:signalname.in => servo_load)
+        sp_load = sig_parms.where(:signalname.in => spendle_load)
+        
         col = []
         col << root_card
         col << op_id
@@ -65,7 +72,7 @@ module Api
         if root_card_id.present?
          root_card_number = components.select{|i| i[:spec_id] == root_card_id.first.value.to_i}
           if root_card_number.present?
-            job = root_card_number.first.name
+            job = root_card_number.first.spec_id
           else
             job = "N/A"
           end
@@ -164,10 +171,10 @@ module Api
      end
 
      tot_tar = compiled_component.pluck(:tar).sum
-        act_tar = compiled_component.pluck(:actual).sum
+     act_tar = compiled_component.pluck(:actual).sum
 
 
-render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operator: operator, line: params[:line], machine: params[:machine], run_time: params[:run_time], stop: params[:stop], diconnect: params[:disconnect], utlization: params[:utlization]}
+render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operator: operator, line: params[:line], machine: params[:machine], run_time: params[:run_time], stop: params[:stop], diconnect: params[:disconnect], utlization: params[:utlization], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value)}
 
    end
 
@@ -208,7 +215,8 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
          macros = L1SignalPoolActive.where(:signalname.in => col)
           #cur_st.data.first["first"].each do |dd|
          cur_st = cur_st1.data.first[:first].select{|li| li[:line] == params[:line]}
-         cur_st.each do |dd|
+          
+          cur_st.each do |dd|
            colr = status.select{|i| i.L1Name == dd["name"]}
            reason = macros.select{|i| i.L1Name == dd["name"]}
            if colr.present?
@@ -242,7 +250,13 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
        #=======================Start=================#
 
     machines = L0Setting.pluck(:L0Name)
-    mac_with_line = L0Setting.pluck(:L0Name, :line).group_by(&:first)
+  #  mac_with_line = L0Setting.pluck(:L0Name, :line).group_by(&:first)
+    mac_with_line = L0Setting.pluck(:L0Name, :L0EnName).map{|i| [i[0], i[1].split('-').first]}.group_by(&:first)
+    # mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+   # machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
+
+
+    
     machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
     bls = machines - machine_log.keys
     mer_req = bls.map{|i| [i,[]]}.to_h
