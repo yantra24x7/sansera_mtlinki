@@ -7,7 +7,7 @@ module Api
         date = Date.today.to_s
         shift = Shift.current_shift
 
-                case
+        case
         when shift.start_day == '1' && shift.end_day == '1'
           start_time = (date+" "+shift.start_time).to_time
           end_time = (date+" "+shift.end_time).to_time
@@ -43,7 +43,7 @@ module Api
       #  sig_parms = L1SignalPool.where(L1Name: machine)
         root_card = "MacroVar_751_path1_#{machine}"
         op_id = "MacroVar_750_path1_#{machine}"
-        key_list = ["MacroVar_604_path1_#{machine}"]
+        key_list = ["MacroVar_751_path1_#{machine}"]
         servo_temp = ["ServoTemp_0_path1_#{machine}", "ServoTemp_1_path1_#{machine}", "ServoTemp_2_path1_#{machine}"]  
         servo_load = ["ServoLoad_0_path1_#{machine}", "ServoLoad_1_path1_#{machine}"]
         spendle_load = ["SpindleLoad_0_path1_#{machine}"]
@@ -58,6 +58,9 @@ module Api
         macros = L1SignalPoolActive.where(:signalname.in => col)
         operator_id = macros.select{|i| i[:signalname] == op_id}
         root_card_id = macros.select{|i| i[:signalname] == root_card}
+ 
+#        byebug
+
         if operator_id.present?
          sel_op = operators.select{|i| i[:operator_spec_id] == operator_id.first.value.to_i.to_s}
          if sel_op.present?
@@ -68,14 +71,15 @@ module Api
         else
           operator = "N/A"
         end
-        
+#byebug        
         if root_card_id.present?
-         root_card_number = components.select{|i| i[:spec_id] == root_card_id.first.value.to_i}
-          if root_card_number.present?
-            job = root_card_number.first.spec_id
-          else
-            job = "N/A"
-          end
+         job = root_card_id.first.value.to_i
+#         root_card_number = components.select{|i| i[:spec_id] == root_card_id.first.value.to_i}
+#          if root_card_number.present?
+#            job = root_card_number.first.spec_id
+#          else
+#            job = "N/A"
+#          end
         else
           job = "N/A"
         end
@@ -85,7 +89,7 @@ module Api
    
     lastdata = key_value.select{|h| h.L1Name == machine}
     all_data = key_values.select{|g| g.L1Name == machine}
-    
+ #   byebug    
     if lastdata.present?
       lastdata.first[:enddate] = Time.now.utc
       all_data << lastdata.first

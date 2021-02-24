@@ -9,6 +9,9 @@ class Report
   field :date, type: Date
   field :shift_num, type: Integer
   field :machine_name, type: String
+  field :time, type: String
+  field :line, type: String
+  field :efficiency, type: String
   field :run_time, type: Integer
   field :idle_time, type: Integer
   field :alarm_time, type: Integer
@@ -22,9 +25,12 @@ class Report
   field :perfomance, type: Float
   field :quality, type: Float
   field :oee, type: Float
-  field :traget, type: Integer
+  field :target, type: Integer
   field :actual, type: Integer
   field :oee_data, type: Integer
+  field :operator, type: Array
+  field :operator_id, type: Array
+  field :component_id, type: Array
   belongs_to :shift
 
   index({date: 1, shift_num: 1, machine_name: 1})

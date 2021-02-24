@@ -5,7 +5,9 @@
 
 # Example:
 #
-# set :output, "/path/to/my/cron_log.log"
+#env :PATH, ENV['PATH']
+set :output, "/home/ubuntu/Rails/sansera_mtlinki/log/cron_log.log"
+env :PATH, ENV['PATH']
 #
 # every 2.hours do
 #   command "/usr/bin/some_great_command"
@@ -23,10 +25,13 @@
 #  runner "Shift.delayed_job", :environment => :development
 #end
 
-#every 5.minutes do
-#  runner "CurrentStatus.current_shift_report",:environment => :development
-#end
+every 2.minutes do
+  runner "CurrentStatus.current_shift_report", :environment => :development
+end
 
+every 5.minutes do
+  runner "CurrentStatus.eff_report", :environment => :development
+end
 
 #every 30.minutes do
 #  runner "OeeCalculation.live_report",:environment => :development

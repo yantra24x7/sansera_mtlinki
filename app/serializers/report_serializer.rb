@@ -1,5 +1,29 @@
 class ReportSerializer < ActiveModel::Serializer
-  attributes :id, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee
+  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency
+ 
+  def root_card
+   if object.component_id == nil
+    []
+   else
+   object.component_id.uniq
+   end
+  end
+  
+  def operator_id
+   if object.operator_id == nil
+    []
+   else
+   object.operator_id.uniq
+   end
+  end
+
+  def operator
+   if object.operator == nil
+    []
+   else
+   object.operator.uniq
+   end
+  end
 
   def duration
   	Time.at(object.duration).utc.strftime("%H:%M:%S") if object.duration.present?
@@ -17,9 +41,9 @@ class ReportSerializer < ActiveModel::Serializer
    	Time.at((object.disconnect).to_i).utc.strftime("%H:%M:%S") if object.disconnect.present?
   end
 
-  def target
-      object.traget
-  end
+#  def target
+#      object.traget
+#  end
   
   def actual
     object.actual

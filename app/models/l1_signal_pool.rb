@@ -38,7 +38,7 @@ class L1SignalPool
     
     key_list = []
     machines.each do |jj|
-    key_list << "MacroVar_604_path1_#{jj[0]}"
+    key_list << "MacroVar_751_path1_#{jj[0]}"
     end
    
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)#.group_by{|kk| kk[:L1Name]}
@@ -46,22 +46,24 @@ class L1SignalPool
     key_value = L1SignalPoolActive.where(:signalname.in => key_list)
     components = Component.all
 
-#777#
 
    final_data = []
      machines.each do |key|
       puts "-----------------------"
       puts "---**---#{key[0]}---**----"
-      puts (Time.now).localtime
+ 
+     puts (Time.now).localtime
       puts (Time.now).localtime
       lastdata = key_value.select{|h| h.L1Name == key[0]}
       all_data = key_values.select{|g| g.L1Name == key[0]}
+
       
       if lastdata.present?
        lastdata.first[:enddate] = Time.now.utc
        all_data << lastdata.first
       end
       time_target = []    
+
       
       if all_data.present?
        if all_data.count == 1
@@ -74,7 +76,8 @@ class L1SignalPool
         all_data.last[:enddate] = end_time
         all_data.last[:timespan] = (end_time - all_data.last.updatedate.to_time)
        end
-      
+  
+    
        all_data.each do |kvalue|  
          if time_target.count == 0
           time_target << kvalue
@@ -100,21 +103,16 @@ class L1SignalPool
           en_time = kk.last.enddate
           tr_data << {comp_id: comp_id, st_time:st_time, ed_time: en_time}
         end
-   #   else
       end
      
 
-#      final_data = []
       compiled_component = []
       tt = tr_data.count
 
+
+
       if tr_data.present?
       if tr_data.count == 1
-
-
-
-
-#888#
 
    
       run_compinent = tr_data.first[:comp_id].to_i
@@ -122,7 +120,11 @@ class L1SignalPool
        if sel_comp.present?
         tar = sel_comp.first.target
         production_count = p_result.select{|sel| sel.enddate > tr_data.first[:st_time].localtime && sel.updatedate < tr_data.first[:ed_time].localtime && sel.L1Name == key[0] && sel.enddate < tr_data.first[:ed_time] }.pluck(:productresult).sum
+        if tar.to_f == 0.0
+        effe = 0
+        else
         effe = production_count.to_f/tar.to_f
+        end
         effi = (effe * 100).to_i
         final_data << {machine: key[0], efficiency: effi, line: key[1], tar: tar, actual:  production_count}
          puts "#{tt} DATA"
@@ -137,16 +139,20 @@ class L1SignalPool
       else
       
       tr_data.each do |data|
-        
+       
         run_compinent = data[:comp_id].to_i
         sel_comp = components.select{|u| u.spec_id == run_compinent && u.L0_name == key[0]}
-        if sel_comp.present?
+         if sel_comp.present?
          tar = sel_comp.first.target
          production_count = p_result.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key[0] && sel.enddate < tr_data.first[:ed_time] }.pluck(:productresult).sum
          sing_part_time = shift.actual_hour/tar
          run_hr = data[:ed_time].to_i - data[:st_time].to_i
          target = run_hr/sing_part_time
+         if target == 0.0
+         effe = 0
+         else
          effe = production_count.to_f/target.to_f
+         end
          effi = (effe * 100).to_i
         # compiled_component << {machine: key[0], efficiency: effi}
          compiled_component << {machine: key[0], efficiency: effi, line: key[1], tar: target, actual: production_count}
@@ -179,6 +185,7 @@ class L1SignalPool
        
      puts (Time.now).localtime
     end#machine
+    
     result_data = []
     final_data.group_by{|d| d[:line]}.map do |key1,value1|
      if key1 == nil
@@ -188,7 +195,6 @@ class L1SignalPool
      end
      over_all_effi = value1.pluck(:efficiency).sum/value1.count
      low_perfom = value1.group_by { |x| x[:efficiency] }.min.last.first[:machine]
-#     byebug
      log_per_tar = final_data.select{|i| i[:machine] == low_perfom}
      if log_per_tar.present?
       lpt = log_per_tar.first[:tar]

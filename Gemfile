@@ -10,13 +10,14 @@ end
 gem 'rails', '~> 5.1.7'
 # Use Puma as the app server
 #gem 'puma', '~> 3.7'
-gem 'mongoid'
+#gem 'mongoid'
 gem 'bson_ext'
 gem "bcrypt-ruby", :require => "bcrypt"
 gem 'jwt'
 gem 'simple_command'
 gem 'mongo'
-gem 'sidekiq', '~>6.0.0'
+gem 'mongoid'
+gem 'sidekiq'#, '~>6.0.0'
 
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 # gem 'jbuilder', '~> 2.5'

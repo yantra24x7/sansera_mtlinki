@@ -2,6 +2,7 @@ class IdleReasonActive
   include Mongoid::Document
   include Mongoid::Timestamps
   field :machine_name, type: String
+  field :time, type: String
   field :date, type: Date 
   field :shift_no, type: Integer
   field :data, type: Array
@@ -31,7 +32,7 @@ class IdleReasonActive
       
       #machines = L0Setting.pluck(:L0Name, :line)
      
-      mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+      mac_list = L0Setting.pluck(:L0Name, :L0EnName)#.first(2)
       machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
 
      # machines = L0Setting.all.map{|i| [name: i[:L0Name], line: i[:line]]}.flatten.pluck(:name, :line)
@@ -46,7 +47,7 @@ class IdleReasonActive
       key_value = L1SignalPoolActive.where(:signalname.in => idle_reason_key)
       data = []
       machines.each do |mac|
-       
+puts mac[0]       
         all_data = []        
 #        aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
 #        other_data = aa.select{|ii| ii.L1Name == mac}
@@ -63,6 +64,7 @@ class IdleReasonActive
         end
       
         selected_data = all_data.select{|i| i.value != 0.0 && i.value != nil}
+ 
         cumulate_idle = []
         if selected_data.present?
           selected_data.each do |reason|
@@ -76,6 +78,7 @@ class IdleReasonActive
           data << {
                  
                    machine_name: mac[0], 
+                   time: start_time.strftime("%H:%M:%S")+' - '+end_time.strftime("%H:%M:%S"), 
                    date: date, 
                    shift_no: shift_no, 
                    data: cumulate_idle, 
@@ -84,14 +87,15 @@ class IdleReasonActive
                    }
       end
     if data.present?
-     byebug
+     
      data.each do |data1|
-      unless IdleReasonActive.where(date: data1[:date], shift_no: data1[:shift_no], machine_name: data1[:machine_name]).present?
-         IdleReasonActive.create(date: data1[:date], shift_no: data1[:shift_no], machine_name: data1[:machine_name],data: data1[:data], total: data1[:data].pluck(:total).sum)
+    # byebug
+       unless IdleReasonActive.where(date: data1[:date], shift_no: data1[:shift_no], machine_name: data1[:machine_name]).present?
+         IdleReasonActive.create(time: data1[:time], date: data1[:date], shift_no: data1[:shift_no], machine_name: data1[:machine_name],data: data1[:data], total: data1[:total])
       else
         rec = IdleReasonActive.where(date: data1[:date], shift_no: data1[:shift_no], machine_name: data1[:machine_name]).first
         if rec.present?
-          rec.update(data: data1[:data], total: data1[:data].pluck(:total).sum)
+          rec.update(time: data1[:time], data: data1[:data], total: data1[:total])
         else
         end
       end
