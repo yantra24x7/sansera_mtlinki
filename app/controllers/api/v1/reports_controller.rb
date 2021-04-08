@@ -10,7 +10,8 @@ module Api
        machine = params[:machine]#Machine.where(id: params[:machine_id]).ids
        date = params[:date].to_date.strftime("%Y-%m-%d")
        shift = params[:shift]#Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
-       idle_report = IdleReasonActive.where(date: date.to_time, shift_no: shift, machine_name: machine)
+#       byebug
+       idle_report = IdleReasonActive.where(date:  date.to_time.strftime("%m-%d-%Y"), shift_no: shift, machine_name: machine)
        render json: idle_report
   #  data = CncHourReport.where(date: date, machine_id: machine, shift_no: shift)
 
@@ -32,6 +33,12 @@ module Api
       result = Report.where(date:range, :shift_num.in =>shifts, :machine_name.in => machines)
       render json: result
      end
+
+
+     def shift_eff_report
+     end
+
+
 
      def compare_report
       

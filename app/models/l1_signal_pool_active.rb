@@ -39,17 +39,28 @@ class L1SignalPoolActive
     machines.each do |jj|
     key_list << "MacroVar_750_path1_#{jj}"
     end
+
+
+    key_list2 = []
+    machines.each do |jj|
+    key_list2 << "MacroVar_756_path1_#{jj}"
+    key_list2 << "MacroVar_757_path1_#{jj}"
+    end
+
+
     
 
     key_list1 = []
     machines.each do |jj|
-    key_list1 << "MacroVar_604_path1_#{jj}"
+    key_list1 << "MacroVar_751_path1_#{jj}"
     end
     mac_list = L0Setting.pluck(:L0Name, :L0EnName)
     mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[0]}
 
     machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time).group_by{|kk| kk[:L1Name]}
+
+    q_check = L1SignalPool.where(:signalname.in => key_list2, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
 
     key_values = L1SignalPool.where(:signalname.in => key_list, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
     key_value = L1SignalPoolActive.where(:signalname.in => key_list)
@@ -199,7 +210,7 @@ end
 
 
     if lastdata1.present?
-      if lastdata1.first.updatedate >= start_time
+      if lastdata1.first.updatedate <= start_time
         lastdata1.first[:enddate] = Time.now.utc
         all_data1 << lastdata1.first
       end
@@ -209,15 +220,18 @@ end
     time_target = []
 
      if all_data1.present?
+      if key == 'PUMP-C86'
+      # byebug
+      end
        if all_data1.count == 1
         all_data1.first[:updatedate] = start_time
         all_data1.first[:enddate] = end_time
         all_data1.first[:timespan] = (end_time - start_time).to_i
        else
         all_data1.first[:updatedate] = start_time
-        all_data1.first[:timespan] = (all_data.first.enddate.to_time - start_time)
+        all_data1.first[:timespan] = (all_data1.first.enddate.to_time - start_time)
         all_data1.last[:enddate] = end_time
-        all_data1.last[:timespan] = (end_time - all_data.last.updatedate.to_time)
+        all_data1.last[:timespan] = (end_time - all_data1.last.updatedate.to_time)
        end
        
         all_data1.each do |kvalue|
@@ -238,6 +252,9 @@ end
 
       tr_data = []
       if time_target.present?
+        # if key == 'VALVE-C63'
+        # byebug
+        # end
         cumulate_data = time_target.split("##")
         cumulate_data.each do |kk|
           comp_id = kk.pluck(:value).compact.uniq.first
@@ -249,16 +266,23 @@ end
       end
 
 
+      compiled_component = []
 
-    compiled_component = []
-    if tr_data.present?
+ if tr_data.present?
      tr_data.each do |data|
+#if key  == "VALVE-C85"
+#   byebug
+#  end
 
         run_compinent = data[:comp_id].to_i
         sel_comp = components.select{|u| u.spec_id == run_compinent && u.L0_name == key}
-        if sel_comp.present?
+       
+         if sel_comp.present?
          tar = sel_comp.first.target
-         production_count = p_result1.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < tr_data.first[:ed_time] }.pluck(:productresult).sum
+#         production_count = p_result1.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < tr_data.first[:ed_time] }.pluck(:productresult).sum
+
+         production_count = p_result1.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < data[:ed_time].localtime }.pluck(:productresult).sum
+
          sing_part_time = shift.actual_hour/tar
          run_hr = data[:ed_time].to_i - data[:st_time].to_i
          target = run_hr/sing_part_time
@@ -269,19 +293,39 @@ end
          end
          effi = (effe * 100).to_i
         # compiled_component << {machine: key[0], efficiency: effi}
-         compiled_component << {machine: key, efficiency: effi, line: key, tar: target, actual: production_count}
+     #    if key  == "VALVE-C85"
+  # byebug
+  #end
+
+
+         compiled_component << {card_no: data[:comp_id].to_i, machine: key, efficiency: effi, line: key, tar: target, actual: production_count, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime}
      #    puts "#{tt} DATA"
      #    puts "NO COUNT"
        else
-    #     puts "#{tt} DATA"
-    #     puts "NO COUNT"
-         compiled_component << {machine: key, efficiency: 0, line: key,tar: 0, actual: 0}
+   
+   #if key  == "VALVE-C85"
+   #byebug
+  #end
+
+
+         production_count = p_result1.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < data[:ed_time].localtime }.pluck(:productresult).sum
+
+         compiled_component << {card_no: data[:comp_id].to_i, machine: key, efficiency: 0, line: key,tar: 0, actual: production_count, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime}
         # compiled_component << {machine: key[0], efficiency: 0}
         end
       end
     else
-     compiled_component << {machine: key, efficiency: 0, line: key, tar: 0, actual: 0}
+     if p_result[key].present?
+     ac_count = p_result[key].pluck(:productresult).map(&:to_i).sum
+     else
+      ac_count = 0
+     end
+     compiled_component << {card_no: "No Card", machine: key, efficiency: 0, line: key, tar: 0, actual: ac_count, rout_start: start_time, rout_end: end_time}
     end
+#if key  == "VALVE-C85"
+#   byebug
+#  end
+ 
 
    if compiled_component.present?
      effi1 = compiled_component.pluck(:efficiency).sum/compiled_component.count
@@ -298,6 +342,9 @@ end
     # ====== End  ======= #
 
 
+#if key == 'VALVE-C46'
+#byebug
+#end
    
     if p_result[key].present?
      total_count = p_result[key].pluck(:productresult).map(&:to_i).sum
@@ -308,60 +355,43 @@ end
      part_name = nil
      program_number = nil
     end
-#    production = p_result["SRB-1106"].pluck(:productresult).map(&:to_i).sum
-#    p_part_data = []
-#    oee_data_result = []
-#    rec_oee = oee_data.select{|kk| kk.machine_name == key}
-#    if rec_oee.present?
-#       res_run_rate = []
-#       rec_oee.each do |tar_rec|
-#        final_rec = tar_rec.idle_run_rate
-#        final_rec.each do |tar_rec1|
-#         tar_rec_pg_no = tar_rec1["program_number"]
-#         tar_rec_run_rate = tar_rec1["run_rate"]
-#         res_part = p_result.where(program_number: tar_rec_pg_no).pluck(:productresult).sum
-#         res_run_rate << res_part * tar_rec_run_rate
-#        end
-#      end
-#      target = rec_oee[0].target
-#      if run_time == 0
-#        perfomance = 0.0
-#      else
-#        perfomance = (res_run_rate.sum)/(run_time).to_f
-#      end
-#    else
-#      target = 0
-#      if run_time == 0
-#        perfomance = 0.0
-#      else
-#        perfomance = 1.0
-#      end
-#    end
+#byebug
+    availability = (run_time.to_f / duration.to_f)
+    if tot_tar == 0
+     performance = 0.0
+    else
+     performance = (total_count.to_f/tot_tar.to_f)
+    end
 
-#    total_pro_data = production.select{|i| i.L1Name == key && i.productresult != '0' }
-#    if total_pro_data.present?
-#    total_count = total_pro_data.pluck(:productresult).map(&:to_i).sum
-#    good_count =  production.select{|pp| pp.accept_count == nil || pp.accept_count == 1}.pluck(:productresult).map(&:to_i).sum
-#    reject_count = production.select{|pp| pp.accept_count == 2}.pluck(:productresult).map(&:to_i).sum
-#    quality = (good_count)/(total_count).to_f
-#    else
-#    total_count = 0
-#    good_count = 0
-#    reject_count = 0
-#    quality = 0
-#    end
+#end
+    qul = q_check.select{|u| u.L1Name == key}
+    if qul.count == 0
+     if total_count == 0
+      quality = 0.0
+     else
+     # if tot_tar == 0
+     #  quality = 0.0
+     # else
+     # quality = (total_count.to_f/tot_tar.to_f)
+     # end
+     quality = 1.0
+     end
+    else
+     rejection_count = qul.pluck(:value).compact.sum.to_i
+     if rejection_count > total_count
+      quality = 0.0
+     else
+      accept_count = total_count - rejection_count
+      if accept_count == 0
+       quality = 0.0
+      else
+      # quality = (total_count.to_f/accept_count.to_f)
+       quality = (accept_count.to_f/total_count.to_f)
+      end
+     end
+    end
 
-#    availability = (utilisation)/(100).to_f
-#    oee = (availability*perfomance*quality)*100
-
-
-#   end
-
-   
- #   machines.each do |machine|
- #     production = p_result.select{|m| m.L1Name == machine[1] && m.enddate < end_time && m.productresult != '0'}  
- #     p_part_data = []
- #     oee_data_result = []
+    oee = 0#((availability * performance * quality)/3.0)
   
 
       data << {
@@ -384,12 +414,13 @@ end
       target: tot_tar,
       actual: total_count,
       efficiency: effi1,
-      availability: nil,
-      perfomance: nil,
-      quality: nil,
-      oee: nil,
+      availability: availability,
+      perfomance: performance,
+      quality: quality,
+      oee: oee,
       operator: operator_name,
       operator_id: opr_list,
+      route_card_report: compiled_component
     }
     
   end
@@ -399,11 +430,11 @@ end
  
       unless Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).present?
         
-        report = Report.create(time: data1[:time], date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee], target: data1[:target], actual: data1[:actual], efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id])
+        report = Report.create(time: data1[:time], date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee], target: data1[:target], actual: data1[:actual], efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report])
        else 
         report = Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).last
         
-        report.update(time: data1[:time], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee],target: data1[:target], actual: data1[:actual],efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id])   
+        report.update(time: data1[:time], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee],target: data1[:target], actual: data1[:actual],efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report])   
       end
     end
   end

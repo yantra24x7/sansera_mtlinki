@@ -19,6 +19,7 @@ class Report
   field :part_count, type: Integer
   field :part_name, type: Array
   field :program_number, type: Array
+  field :route_card_report, type: Array
   field :duration, type: Integer
   field :utilisation, type: Integer
   field :availability, type: Float
@@ -35,374 +36,11 @@ class Report
 
   index({date: 1, shift_num: 1, machine_name: 1})
 
-
-    def self.report#(date, shift_no)
+  def self.general_report(date, shift_no)
+ 
+#    puts Time.now
     data = []
-    date_arr = ('04-03-2020').to_date..('04-03-2020').to_date
-    date_arr.each do |dat|
-      
-    date = dat.strftime("%d-%m-%Y")
-    all_shift = Shift.where(shift_no: 1)
-    all_shift.each do |shift|
-      
-    #shift = Shift.find_by(shift_no:shift_no)
-    case
-    when shift.start_day == '1' && shift.end_day == '1'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time
-    when shift.start_day == '1' && shift.end_day == '2'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    else
-      start_time = (date+" "+shift.start_time).to_time+1.day
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    end
-
-    machines = L0Setting.pluck(:id, :L0Name)
-    machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
-    aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
-    p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time)
-    machines.each do |machine|
-    prog = ProgramHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine[1], mainprogflg: true)
-    
-    ll = prog.select{|hh| hh.mainprog == hh.runningprog }
-      
-      #m_p_result = p_result.select{|m| m.L1Name == machine && m.updatedate > start_time}
-      m_p_result = p_result.select{|m| m.L1Name == machine[1] && m.enddate < end_time}
-      p_part_data = []
-      m_p_result.each do |part|
-        if part.productresult != '0'
-
-          pg_group = prog.select{|b| b.updatedate >= part.updatedate && b.enddate <= part.enddate}
-          if pg_group.present?
-            pg_num = pg_group.pluck(:mainprog).first
-          else
-            pg_num = "No PGM"
-          end
-          p_part_data << {date: date, shift_num: shift.shift_no, machine_name: machine[1], part_count: part.productresult_accumulate, program_number: pg_num, part_start_time: part.updatedate, part_end_time: part.enddate, cycle_time: nil, cutting_time: nil, productname: part.productname, productresult: part.productresult.to_i, productresult_accumulate: part.productresult_accumulate, timespan: part.timespan, accept_count: nil, reject_count: nil, is_verified: false, l0_setting_id: machine[0], shift_id: shift.id}
-        end  
-      end
-
-      oee_data = OeeCalculation.where(date: date, shift_num: shift.shift_no)
-      
-
-
-
-
-      production_name = m_p_result.select{|kk| kk.productresult != 0}.pluck(:productname).uniq
-     
-      other_data = aa.select{|ii| ii.L1Name == machine[1]}
-      
-      # other_data = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
-      machine_log = machine_logs.select{|kk| kk.updatedate >= start_time && kk.enddate <= end_time && kk.L1Name == machine[1]}  
-        
-      other_data.each do |torcher_data|
-      case 
-      when torcher_data.updatedate.localtime < start_time.localtime && torcher_data.enddate.localtime > end_time.localtime
-        time_span = end_time - start_time
-        machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-      when torcher_data.updatedate.localtime < start_time.localtime
-        time_span = torcher_data.enddate.localtime - start_time
-        machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: torcher_data.enddate, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-      when torcher_data.enddate.localtime > end_time.localtime   
-        time_span = end_time - torcher_data.updatedate.localtime
-        machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: torcher_data.updatedate, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-      end
-      end    
-    final_data = machine_log.sort_by &:updatedate 
-    duration = (end_time - start_time).to_i
-    operate = []
-    manual = []
-    disconnect = []
-    alarm = []
-    emergency = []
-    stop = []
-    suspend = []
-    warmup = []
-
-    final_data.each do  |dat|
-    case 
-      when dat.value == "OPERATE"
-        operate << dat.timespan
-      when dat.value == "MANUAL"
-        manual << dat.timespan
-      when dat.value == "DISCONNECT"
-        disconnect << dat.timespan
-      when dat.value == "ALARM"
-        alarm << dat.timespan
-      when dat.value == "EMERGENCY"
-        emergency << dat.timespan
-      when dat.value == "STOP"
-        stop << dat.timespan
-      when dat.value == "SUSPEND"
-        suspend << dat.timespan
-      when dat.value == "WARMUP"
-        warmup << dat.timespan
-      end
-    end
-    
-    total_running_time = operate.sum + manual.sum + disconnect.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum
-    bls = duration - total_running_time
-    run_time = operate.sum
-    idle_time = (manual.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum)
-    disconnect = (disconnect.sum + bls)
-    utilisation = ((run_time*100) / duration)
-     
-    byebug
-     
-      data << {
-      date: date,
-      shift_num: shift.shift_no,
-      shift_id: shift.id,
-      machine_name: machine[1],
-      run_time: run_time,
-      idle_time: idle_time,
-      disconnect: disconnect,
-      part_count: m_p_result.pluck(:productresult).map(&:to_i).sum,
-      part_name: production_name,
-      program_number: ll.pluck(:mainprog).uniq,
-      duration: duration,
-      utilisation: utilisation,
-      part: p_part_data
-    }
-    end
-    end
-    end
-    
-    data.each do |data1|
-      unless Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).present?
-        report = Report.create(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation])
-        
-        data1[:part].each do |single_part|
-          finl_data = single_part.merge(result_id: report.id)  
-          ProductionPart.create(finl_data)
-        end
-      
-      else
-       
-        report = Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).last
-        report.update(run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation])
-        
-        data1[:part].each do |single_part|
-          if ProductionPart.where(machine_name: single_part[:machine_name], part_start_time: single_part[:part_start_time], part_end_time: single_part[:part_end_time]).present?
-          puts "Ok"
-          else
-            finl_data = single_part.merge(result_id: report.id)  
-            ProductionPart.create(finl_data)
-          end
-        end
-       
-      end
-    end
-  end
-
-
-  def self.oee_calculation
-    data = []
-    date_arr = ('04-03-2020').to_date..('04-03-2020').to_date
-    date_arr.each do |dat|
-      
-    date = dat.strftime("%d-%m-%Y")
-    all_shift = Shift.where(shift_no: 1)
-
-    machines = L0Setting.pluck(:id, :L0Name)
-    all_shift.each do |shift|
-      
-    #shift = Shift.find_by(shift_no:shift_no)
-    case
-    when shift.start_day == '1' && shift.end_day == '1'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time
-    when shift.start_day == '1' && shift.end_day == '2'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    else
-      start_time = (date+" "+shift.start_time).to_time+1.day
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    end
-    
-    machines.each do |machine|
-
-      oee_data = OeeCalculation.where(date: date, shift_num: shift.shift_no, l0_setting_id: machine[0])
-      production = ProductionPart.where(date: date, shift_num: shift.shift_no, l0_setting_id: machine[0])
-      
-      rec_oee = oee_data.pluck(:idle_run_rate)
-      rec_oee.flatten.each do |tar|
-        total = production.select{|dd| dd.program_number.split('/').last == tar["program_number"] }
-        accept_count = production.select{|dd| dd.program_number.split('/').last == tar["program_number"] && dd.accept_count == 1 }
-        reject_count = production.select{|dd| dd.program_number.split('/').last == tar["program_number"] && dd.reject_count == 1 }
-        data << {program_number: tar["program_number"], count: total.count, accept_count: accept_count.count, reject_count: reject_count.count}
-      end
-      oee_data.update(actual_idle_run_rate: data, actual: data.pluck(:count).sum)
-
-    end
-
-  end
-  end
-
-    
-  end
-
-
-  def self.reason_entry
-    reason_list = ["No_load", "Wire_feeding", "Setting", "Setter_unavalable", "Tally_cleaning", "Breakdown", "Tools_unavalable", "Tea_break", "Lunch_break", "Rest_room"]
-    data = []
-    date_arr = ('21-10-2020').to_date..('31-10-2020').to_date
-   # machines = L0Setting.pluck(:id, :L0Name)
-   # machines = L0Setting.where(:id.in=> ['5eba6cc55aba68b3bc24b933', '5eba6cc55aba68b3bc24b934']).pluck(:id, :L0Name)
-    machines = L0Setting.pluck(:id,:L0Name)
-    date_arr.each do |dat|
-      
-      date = dat.strftime("%d-%m-%Y")
-      all_shift = Shift.all
-      all_shift.each do |shift|
-        
-        #shift = Shift.find_by(shift_no:shift_no)
-        case
-        when shift.start_day == '1' && shift.end_day == '1'
-          start_time = (date+" "+shift.start_time).to_time
-          end_time = (date+" "+shift.end_time).to_time
-        when shift.start_day == '1' && shift.end_day == '2'
-          start_time = (date+" "+shift.start_time).to_time
-          end_time = (date+" "+shift.end_time).to_time+1.day
-        else
-          start_time = (date+" "+shift.start_time).to_time+1.day
-          end_time = (date+" "+shift.end_time).to_time+1.day
-        end
-        
-        (start_time.to_i..end_time.to_i).step(3600) do |hour|
-          (hour.to_i+3600 <= end_time.to_i) ? (hour_start_time=Time.at(hour).strftime("%Y-%m-%d %H:%M"),hour_end_time=Time.at(hour.to_i+3600).strftime("%Y-%m-%d %H:%M")) : (hour_start_time=Time.at(hour).strftime("%Y-%m-%d %H:%M"),hour_end_time=Time.at(end_time).strftime("%Y-%m-%d %H:%M"))
-            #(hour.to_i+3600 <= end_time.to_i) ? (hour_start_time=Time.at(hour).strftime("%Y-%m-%d %H:%M"),hour_end_time=Time.at(hour.to_i+3600).strftime("%Y-%m-%d %H:%M")) : (hour_start_time=Time.at(hour).strftime("%Y-%m-%d %H:%M"),hour_end_time=Time.at(end_time).strftime("%Y-%m-%d %H:%M"))
-            unless hour_start_time[0].to_time == hour_end_time.to_time
-              
-            puts date
-
-            machines.each do |machine|
-                res = reason_list[rand(reason_list.length)]
-                IdleReasonTransaction.create(l0_setting_id: machine[0], machine_name: machine[1], reason: res, start_time: hour_start_time[0].to_time, end_time: hour_start_time[1].to_time)
-              end 
-          end
-        end
-      end
-    end
-  end
-
-  def self.idle_reason_report
-  
-  date = '2020-02-04' 
-  shift = Shift.find_by(shift_no:2)
-  machines = L0Setting.pluck(:id, :L0Name)
-   case
-    when shift.start_day == '1' && shift.end_day == '1'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time
-    when shift.start_day == '1' && shift.end_day == '2'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    else
-      start_time = (date+" "+shift.start_time).to_time+1.day
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    end
-
-      idle_reasons = IdleReasonTransaction.where(:end_time.gte => start_time, :start_time.lte => end_time)
-      status = ['MANUAL','ALARM','EMERGENCY','STOP','SUSPEND','WARMUP']
-      machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time, :value.in => status) 
-     machines.each do |machine|
-      selected_reason =  idle_reasons.select{|kk| kk.start_time >= start_time && kk.end_time <= end_time && kk.machine_name == machine[1]}
-      machine_log = machine_logs.select{|kk| kk.updatedate >= start_time && kk.enddate <= end_time && kk.L1Name == machine[1]}
-      selected_reason.each do |reason|
-        machine_log.select{|jj| jj.updatedate > reason.start_time && jj.enddate <= reason.end_time}
-        byebug
-      end
-    end
-    
-  end
-
-
-
-  def self.report1#(date, shift_no)
-    data = []
-    date_arr = ('09-02-2020').to_date..('29-02-2020').to_date
-    date_arr.each do |dat|   
-      date = dat.strftime("%d-%m-%Y")
-      all_shift = Shift.all
-      all_shift.each do |shift|
-        case
-        when shift.start_day == '1' && shift.end_day == '1'
-          start_time = (date+" "+shift.start_time).to_time
-          end_time = (date+" "+shift.end_time).to_time
-        when shift.start_day == '1' && shift.end_day == '2'
-          start_time = (date+" "+shift.start_time).to_time
-          end_time = (date+" "+shift.end_time).to_time+1.day
-        else
-          start_time = (date+" "+shift.start_time).to_time+1.day
-          end_time = (date+" "+shift.end_time).to_time+1.day
-        end
-        machines = L0Setting.pluck(:id, :L0Name)
-        machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
-        idle_reasons = IdleReasonTransaction.where(:end_time.gte => start_time, :start_time.lte => end_time)
-        aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
-        machines.each do |machine|
-          selected_reason =  idle_reasons.select{|kk| kk.start_time >= start_time && kk.end_time <= end_time && kk.machine_name == machine[1]}
-          other_data = aa.select{|ii| ii.L1Name == machine[1]} 
-          machine_log = machine_logs.select{|kk| kk.updatedate >= start_time && kk.enddate <= end_time && kk.L1Name == machine[1]}  
-            
-          other_data.each do |torcher_data|
-            case 
-            when torcher_data.updatedate.localtime < start_time.localtime && torcher_data.enddate.localtime > end_time.localtime
-              time_span = end_time - start_time
-              machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-            when torcher_data.updatedate.localtime < start_time.localtime
-              time_span = torcher_data.enddate.localtime - start_time
-              machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: torcher_data.enddate, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-            when torcher_data.enddate.localtime > end_time.localtime   
-              time_span = end_time - torcher_data.updatedate.localtime
-              machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: torcher_data.updatedate, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-            end
-          end  
-
-          final_data = machine_log.sort_by &:updatedate 
-          final_data1 = final_data.select{|uu| uu.value == "MANUAL" || uu.value == "ALARM" || uu.value == "EMERGENCY" || uu.value == "STOP" || uu.value == "SUSPEND" || uu.value == "WARMUP" }
-
-          final_data1.each do |rep|
-            if rep.value == "EMERGENCY" || rep.value == "ALARM"
-            if AlarmHistory.where(:updatedate.gte => rep.updatedate, :enddate.lte => rep.enddate, L0Name: machine[1]).present?
-             ins_data = AlarmHistory.where(:updatedate.gte => rep.updatedate, :enddate.lte => rep.enddate, L0Name: machine[1]).first.message
-            else
-             ins_data = rep.value
-            end
-          else
-            ins_data = selected_reason.select{|a| a.end_time > rep.updatedate && a.start_time < rep.enddate}
-            if ins_data.present?
-              ins_data = ins_data.first.reason
-            else
-              ins_data = []
-            end
-          end     
-
-          if ins_data.present?    
-             IdleReasonReport.create(date: date, machine_name: machine[1], reason: ins_data, start_time: rep.updatedate, end_time: rep.enddate, machine_sign: rep.value, shift_num: shift.shift_no, shift_id: shift.id, l0_setting_id: machine[0], duration: rep.timespan) 
-          else
-            IdleReasonReport.create(date: date, machine_name: machine[1], reason: "NO REASON", start_time: rep.updatedate, end_time: rep.enddate, machine_sign: rep.value, shift_num: shift.shift_no, shift_id: shift.id, l0_setting_id: machine[0], duration: rep.timespan)
-          end
-        end
-      end 
-    end
-  end 
-end
-
-
-
-def self.report_last(date, shift_no)
-    data = []
-
-    #date_arr = ('01-02-2020').to_date..('29-02-2020').to_date
-    #date_arr.each do |dat|
-      
-    #date = dat.strftime("%d-%m-%Y")
-    #all_shift = Shift.all
-    #all_shift.each do |shift|
-      
+    oee_data = []
     shift = Shift.find_by(shift_no:shift_no)
     case
     when shift.start_day == '1' && shift.end_day == '1'
@@ -415,64 +53,363 @@ def self.report_last(date, shift_no)
       start_time = (date+" "+shift.start_time).to_time+1.day
       end_time = (date+" "+shift.end_time).to_time+1.day
     end
-
-    machines = L0Setting.pluck(:id, :L0Name)
-    machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
-    idle_reasons = IdleReasonTransaction.where(:end_time.gte => start_time, :start_time.lte => end_time)
-    aa = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
-    machines.each do |machine|
     
-     selected_reason =  idle_reasons.select{|kk| kk.start_time >= start_time && kk.end_time <= end_time && kk.machine_name == machine[1]}
-     other_data = aa.select{|ii| ii.L1Name == machine[1]} 
-      # other_data = machine_logs.select{|jj| jj.updatedate < start_time || jj.enddate > end_time}
-      machine_log = machine_logs.select{|kk| kk.updatedate >= start_time && kk.enddate <= end_time && kk.L1Name == machine[1]}  
-        
-      other_data.each do |torcher_data|
-      case 
-      when torcher_data.updatedate.localtime < start_time.localtime && torcher_data.enddate.localtime > end_time.localtime
-        time_span = end_time - start_time
-        machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-      when torcher_data.updatedate.localtime < start_time.localtime
-        time_span = torcher_data.enddate.localtime - start_time
-        machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: start_time, enddate: torcher_data.enddate, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-      when torcher_data.enddate.localtime > end_time.localtime   
-        time_span = end_time - torcher_data.updatedate.localtime
-        machine_log << L1SignalPoolCapped.new(id:torcher_data.id, L1Name: torcher_data.L1Name, updatedate: torcher_data.updatedate, enddate: end_time, timespan: time_span, signalname: torcher_data.signalname, value: true, filter: nil, TypeID: nil, Judge: nil, Error: nil, Warning: nil)
-      end
-      end    
-    final_data = machine_log.sort_by &:updatedate 
-    final_data1 = final_data.select{|uu| uu.value == "MANUAL" || uu.value == "ALARM" || uu.value == "EMERGENCY" || uu.value == "STOP" || uu.value == "SUSPEND" || uu.value == "WARMUP" }
+    duration = (end_time - start_time).to_i
+    mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+    mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[0]} 
+    machines = mac_lists.keys
+    
+    macro_list = []
+    machines.each do |jj|
+      macro_list << "MacroVar_750_path1_#{jj}" #Operator Id
+      macro_list << "MacroVar_751_path1_#{jj}" #Route Card
+      macro_list << "MacroVar_752_path1_#{jj}" #Operation Number
+      macro_list << "MacroVar_753_path1_#{jj}" #Setting
+      macro_list << "MacroVar_755_path1_#{jj}" #Idle Reason
+      macro_list << "MacroVar_756_path1_#{jj}" #Rejection
+      macro_list << "MacroVar_757_path1_#{jj}" #Rework
+    end
+
+    machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
+    p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
+    signal_logs = L1SignalPool.where(:signalname.in => macro_list, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
+    signal_log = L1SignalPoolActive.where(:signalname.in => macro_list)
+    bls = machines - machine_log.keys    
+    mer_req = bls.map{|i| [i,[]]}.to_h
+    machine_logs = machine_log.merge(mer_req)
+
+    operators = Operator.all.pluck(:operator_spec_id, :operator_name).group_by(&:first) 
+
+    machine_logs.each do |key, value|
+     puts key
+     operate = []
+     manual = []
+     disconnect = []
+     alarm = []
+     emergency = []
+     stop = []
+     suspend = []
+     warmup = []
      
-    final_data1.each do |rep|
-    if rep.value == "EMERGENCY" || rep.value == "ALARM"
-      if AlarmHistory.where(:updatedate.gte => rep.updatedate, :enddate.lte => rep.enddate, L0Name: machine[1]).present?
-       ins_data = AlarmHistory.where(:updatedate.gte => rep.updatedate, :enddate.lte => rep.enddate, L0Name: machine[1]).first.message
+     if value.count == 0
+       value << L1Pool.new(updatedate: start_time, enddate: end_time, timespan: duration, default: duration,  value: "DISCONNECT")
+     elsif value.count == 1
+       value.first[:updatedate] = start_time
+       value.first[:enddate] = end_time
+       value.first[:default] = (end_time - start_time).to_i
+       value.first[:timespan] = (end_time - start_time).to_i
+     else
+       value.first[:updatedate] = start_time
+       value.first[:timespan] = (value.first.enddate.to_time - start_time)
+       value.first[:default] = (value.first.enddate.to_time - start_time)
+       value.last[:enddate] = end_time
+       value.last[:timespan] = (end_time - value.last.updatedate.to_time)
+       value.last[:default] = (end_time - value.last.updatedate.to_time)
+     end
+         
+     group_split =  value.group_by{|gg|gg[:value]}
+     puts value.pluck(:timespan).sum
+     group_split.each do |k,v|
+       case
+       when k == "OPERATE"
+        operate << v.pluck(:timespan).sum
+       when k == "MANUAL"
+        manual << v.pluck(:timespan).sum
+       when k == "DISCONNECT"
+        disconnect << v.pluck(:timespan).sum
+       when k == "ALARM"
+        alarm << v.pluck(:timespan).sum
+       when k == "EMERGENCY"
+        emergency << v.pluck(:timespan).sum
+       when k == "STOP"
+        stop << v.pluck(:timespan).sum
+       when k == "SUSPEND"
+        suspend << v.pluck(:timespan).sum
+       when k == "WARMUP"
+        warmup << v.pluck(:timespan).sum
+       end
+     end
+     
+     total_running_time = operate.sum + manual.sum + disconnect.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum
+     bls = duration - total_running_time
+     run_time = operate.sum
+     idle_time = (manual.sum + stop.sum + suspend.sum + warmup.sum)
+     alarm_time = (alarm.sum + emergency.sum)
+     disconnect = (disconnect.sum + bls)
+     utilisation = ((run_time*100) / duration)
+     total_count_shift = p_result.select{|d| d.L1Name == key && d.productresult != 0 && d.productresult != nil}.pluck(:productresult).sum
+    # -- test code -- #
+
+     tot_rejection = signal_logs.select{|o| o.enddate > start_time && o.updatedate < end_time && o.signalname == "MacroVar_756_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}.sum
+     tot_rework =  signal_logs.select{|w| w.enddate > start_time && w.updatedate < end_time && w.signalname == "MacroVar_757_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i != 0}.sum
+     tot_oper_id = signal_logs.select{|q| q.enddate > start_time && q.updatedate < end_time && q.signalname == "MacroVar_752_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
+     tot_operator_id = signal_logs.select{|q| q.enddate > start_time && q.updatedate < end_time && q.signalname == "MacroVar_750_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
+     
+     opr_lists = tot_operator_id.map(&:to_i)
+     operator_names = []
+    
+     opr_lists.each do |op_li|
+      if operators[op_li.to_s].present?
+       operator_names << operators[op_li.to_s][0][1]
       else
-       ins_data = rep.value
+       operator_names << "N/A"
       end
-    else
-      #ins_data = selected_reason.select{|a| a.start_time >= rep.updatedate}.first
-      ins_data = selected_reason.select{|a| a.end_time > rep.updatedate && a.start_time < rep.enddate}
-      if ins_data.present?
-        ins_data = ins_data.first.reason
+     end
+
+    
+    # ---- Route Card ---- #
+    # MacroVar_751_path1_#{key} 
+     route_card_data = []
+     route_logs = signal_logs.select{|g| g.L1Name == key && g.signalname == "MacroVar_751_path1_#{key}"}
+     route_log = signal_log.select{|f| f.L1Name == key && f.signalname == "MacroVar_751_path1_#{key}"}
+     # ----- Idle Reason ---- #
+     idle_reason_data = []
+     idle_logs = signal_logs.select{|g| g.L1Name == key && g.signalname == "MacroVar_755_path1_#{key}"}
+   #  idle_log = signal_log.select{|f| f.L1Name == key && f.signalname == "MacroVar_755_path1_#{key}"}
+     
+   #  if idle_log.present?
+   #   if [start_time..end_time].include?(idle_log.first.updatedate) || idle_log.first.updatedate <= start_time
+   #     idle_log.first[:enddate] = end_time.utc
+   #     route_logs << route_log.first
+   #   end
+   #  end
+
+     
+     if route_log.present?
+      if [start_time..end_time].include?(route_log.first.updatedate) || route_log.first.updatedate <= start_time
+        route_log.first[:enddate] = end_time.utc
+        route_logs << route_log.first
+      end
+     end
+
+     
+     time_wise_route_card = []
+     
+     if route_logs.present?
+      if route_logs.count == 1
+        route_logs.first[:updatedate] = start_time
+        route_logs.first[:enddate] = end_time
+        route_logs.first[:timespan] = (end_time - start_time).to_i
       else
-        ins_data = []
+        route_logs.first[:updatedate] = start_time
+        route_logs.first[:timespan] = (route_logs.first.enddate.to_time - start_time)
+        route_logs.last[:enddate] = end_time
+        route_logs.last[:timespan] = (end_time - route_logs.last.updatedate.to_time)
+      end      
+     
+#      if key == 'VALVE-C85'
+#       byebug
+#      end
+ 
+      route_logs.each do |kvalue|
+        if time_wise_route_card.count == 0 
+          if  kvalue.value != nil
+          time_wise_route_card << kvalue
+          end
+        else
+          if time_wise_route_card[-1].value == kvalue.value || kvalue.value == nil || time_wise_route_card[-1].value == nil
+            time_wise_route_card << kvalue
+          else
+            time_wise_route_card << "##"
+            time_wise_route_card << kvalue
+          end
+        end
       end
-    end                                     
-     if ins_data.present?
+     end
+     
+     time_wise_route_list = []
+     if time_wise_route_card.present?
+       cumulate_data = time_wise_route_card.split("##")
+       cumulate_data.each do |kk|
+         comp_id = kk.pluck(:value).compact.uniq.first
+         st_time = kk.first.updatedate
+         en_time = kk.last.enddate
+         time_wise_route_list << {comp_id: comp_id, st_time:st_time, ed_time: en_time}
+        end
+     end
 
-       IdleReasonReport.create(date: date, machine_name: machine[1], reason: ins_data, start_time: rep.updatedate, end_time: rep.enddate, machine_sign: rep.value, shift_num: shift.shift_no, shift_id: shift.id, l0_setting_id: machine[0], duration: rep.timespan) 
-    else
-      IdleReasonReport.create(date: date, machine_name: machine[1], reason: "NO REASON", start_time: rep.updatedate, end_time: rep.enddate, machine_sign: rep.value, shift_num: shift.shift_no, shift_id: shift.id, l0_setting_id: machine[0], duration: rep.timespan)
-    end
-    end
+     
+     if time_wise_route_list.present?
+       time_wise_route_list.each do |data|
+         production_result  = p_result.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < data[:ed_time].localtime && sel.productresult != 0}
 
-    end
-    #end
-    #end 
-  end
+         opr_list = signal_logs.select{|o| o.enddate > data[:st_time].localtime && o.updatedate < data[:ed_time].localtime && o.signalname == "MacroVar_750_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}.map(&:to_i)
+         
+        operator_name = []
+        opr_list.each do |op_li|
+         if operators[op_li.to_s].present?
+           operator_name << operators[op_li.to_s][0][1]
+         else
+           operator_name << "N/A"
+         end
+        end
 
+         if production_result.present?
+           actual_produced =  production_result.pluck(:productresult).sum
+           product_start_time = production_result.first.updatedate.localtime
+           product_end_time = production_result.first.enddate.localtime
+           id_time_duration = []
+           if idle_logs.present? 
+             ac = idle_logs.reject{|kk| kk.value == 0}
+             ac_data = ac.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime}
+             if ac_data.present?
+               unless ac_data.first.updatedate > data[:st_time].localtime
+                ac_data.first.updatedate = data[:st_time]
+               end
+               if ac_data.first.enddate > data[:ed_time].localtime
+                ac_data.first.enddate = data[:ed_time]
+               end
+               ac_data.each do |dd|
+                id_time_duration << (dd.enddate.to_i - dd.updatedate.to_i).to_f
+               end
+             end
+           else
+           end
 
+           if start_time <= product_start_time
+            cycle_time = value.select{|jj| jj.enddate > product_start_time && jj.updatedate < product_end_time  && jj.value == "OPERATE"}.pluck(:timespan).sum
+           else
+            cycles = []
+            cycles << L1Pool.where(:enddate.gte => product_start_time, :updatedate.lte => product_end_time, :enddate.lte => product_end_time, :L1Name=> key, value: "OPERATE").pluck(:timespan).sum
+            cycles << L1Pool.where(:enddate.gte => product_start_time+1, :updatedate.lte => product_end_time, :enddate.lte => product_end_time, :L1Name=> key, value: "OPERATE").pluck(:timespan).sum
+            cyc_time = cycles.reject{|k| k==0}
+            if cyc_time.empty?
+             cycle_time = 0
+            else
+             cycle_time = cyc_time.min
+            end
+           end
+           run_hr = data[:ed_time].to_i - data[:st_time].to_i
+           if cycle_time == 0
+            target = 0.0
+            effe = 0.0
+           else
+            running_hour = (run_hr - (id_time_duration.sum))
+            target = (running_hour/cycle_time).to_i
+            if target.to_f == 0.0
+              effe = 0
+            else
+              effe = (actual_produced.to_f/target.to_f)
+            end
+           end
+#byebug
+           rejection = signal_logs.select{|o| o.enddate > data[:st_time].localtime && o.updatedate < data[:ed_time].localtime && o.signalname == "MacroVar_756_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}.sum
+           rework =  signal_logs.select{|w| w.enddate > data[:st_time].localtime && w.updatedate < data[:ed_time].localtime && w.signalname == "MacroVar_757_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i != 0}.sum 
+           oper_id = signal_logs.select{|q| q.enddate > data[:st_time].localtime && q.updatedate < data[:ed_time].localtime && q.signalname == "MacroVar_752_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
 
+                     
+           float_value = data[:comp_id]%1
+           if data[:comp_id] == 0
+             mode = "No Entry"
+           elsif float_value == 0
+             mode = "Production"
+           else
+             mode = "Setting"
+            end
+     
+           route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: effe, line: mac_lists[key].first[1], tar: target, actual: actual_produced, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime, rejection: rejection, rework: rework, opeation_no: oper_id, operator_id: opr_list, operator_name: operator_name}
+
+         else
+          float_value = data[:comp_id]%1
+          if data[:comp_id] == 0
+           mode = "No Entry"
+          elsif float_value == 0
+           mode = "Production"
+          else
+           mode = "Setting"
+          end
    
+          route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: 0, line: mac_lists[key].first[1], tar: 0, actual: 0, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime, rejection: 0, rework: 0, opeation_no: [], operator_id: opr_list, operator_name: operator_name}
+         end    
+       end
+     else
+      route_card_data << {mode: "No Entry", card_no: "No Card", machine: key, efficiency: 0, line: mac_lists[key].first[1], tar: 0, actual: total_count_shift, rout_start: start_time, rout_end: end_time, rejection: tot_rejection, rework: tot_rework, opeation_no: tot_oper_id, operator_id: opr_lists, operator_name: operator_names }
+     end
+     
+      
+    # ---- Route Card End  ---- #
+
+    # ---- Calculation Start ---- #
+         
+    # byebug
+     total_count = route_card_data.pluck(:actual).sum
+     total_target = route_card_data.pluck(:tar).sum
+     total_route_entry = route_card_data.select{|u| u[:mode] != "No Entry" && u[:mode] != "Setting" && u[:efficiency] != 0}
+
+     if total_route_entry.present?
+      total_efficiency = total_route_entry.pluck(:efficiency).sum
+      total_rejection = total_route_entry.pluck(:rejection).sum
+      total_rework = total_route_entry.pluck(:rework).sum
+      total_actual = total_route_entry.pluck(:actual).sum
+      total_tar = total_route_entry.pluck(:tar).sum
+   
+      over_all_efficiency = (total_efficiency.to_f/total_route_entry.count)
+      total_wasted_part = (total_rejection + total_rework)
+  
+      if total_actual != 0 && total_actual > total_wasted_part
+       good_part = total_actual - total_wasted_part
+       quality = (good_part/total_actual)
+      else
+       quality = 0
+      end
+     else
+      over_all_efficiency = 0
+      quality = 0
+     end
+    
+
+    planed_production_time = duration - shift.break_time
+    availability = (run_time/planed_production_time.to_f) 
+  #  t_availability = availability * 100
+  #  t_quality = quality * 100
+  #  t_perfomance = over_all_efficiency * 100
+  #  oee = (availability * over_all_efficiency * quality) * 100
+
+     data << 
+      {
+      date: date,
+      shift_num: shift.shift_no,
+      time: start_time.strftime("%H:%M:%S")+' - '+end_time.strftime("%H:%M:%S"),
+      shift_id: shift.id,
+      machine_name: key,
+      line: mac_lists[key].first[1],
+      run_time: run_time,
+      idle_time: idle_time,
+      alarm_time: alarm_time,
+      disconnect: disconnect,
+      part_count: total_count_shift,
+      part_name: nil,
+      program_number: nil,
+      component_id: time_wise_route_list.pluck(:comp_id),
+      duration: duration,
+      utilisation: utilisation,
+      target: total_target,
+      actual: total_count,
+      efficiency: over_all_efficiency,
+     
+      availability: 0,
+      perfomance: 0,
+      quality: 0,
+      oee: 0,
+     
+      operator: operator_names,
+      operator_id: opr_lists,
+      route_card_report: route_card_data
+      } 
+
+    end
+
+       data.each do |data1|
+
+      unless Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).present?
+
+        report = Report.create(time: data1[:time], date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee], target: data1[:target], actual: data1[:actual], efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report])
+       else
+        report = Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).last
+
+        report.update(time: data1[:time], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee],target: data1[:target], actual: data1[:actual],efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report])
+      end
+    end
+
+  end 
 end

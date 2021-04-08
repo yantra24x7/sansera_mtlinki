@@ -8,7 +8,7 @@ class L1Pool
    field :L1Name, type: String
    field :updatedate, type: DateTime
    field :enddate, type: DateTime
-   field :timespan, type: Integer
+   field :timespan, type: Float
    field :signalname, type: String
    field :value, type: String
    field :filter, type: String

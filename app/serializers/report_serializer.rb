@@ -1,5 +1,5 @@
 class ReportSerializer < ActiveModel::Serializer
-  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency
+  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency, :route_card_report
  
   def root_card
    if object.component_id == nil
@@ -51,7 +51,7 @@ class ReportSerializer < ActiveModel::Serializer
   
   def availability
     if object.availability.present?
-    object.availability.round(2) * 100
+    (object.availability * 100).round(2)
     else
      0
     end
@@ -59,7 +59,7 @@ class ReportSerializer < ActiveModel::Serializer
 
   def perfomance
     if object.perfomance.present?
-    object.perfomance.round(2) * 100
+    (object.perfomance * 100).round(2)
     else
      0
     end
@@ -67,7 +67,7 @@ class ReportSerializer < ActiveModel::Serializer
  
   def quality
    if object.quality.present?
-   object.perfomance.round(2) * 100
+   (object.quality* 100).round(2)
    else
    0
    end
@@ -75,7 +75,8 @@ class ReportSerializer < ActiveModel::Serializer
   
   def oee
     if object.oee.present?
-   (object.perfomance * object.quality * object.availability).round(2) * 100
+     
+     ((object.availability * object.perfomance * object.quality) * 100 ).round(2) 
     else
      0
     end

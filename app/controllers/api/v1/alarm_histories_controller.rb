@@ -10,7 +10,7 @@ module Api
                 search_value =  params[:search].present? ? params[:search] : ""
              
                if params[:search] == ""
-                 all_alarms = AlarmHistory.all
+                 all_alarms = AlarmHistory.all.order_by(:updatedate.desc)
                 else
                  all_alarms = AlarmHistory.full_text_search(search_value)
                 end

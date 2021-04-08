@@ -56,6 +56,7 @@ Rails.application.routes.draw do
       	get 'mtlink_single_machine_detail' => 'details#mtlink_single_machine_detail'
 
         get 'overall_report' => 'reports#overall_chart'
+        get 'shift_eff_report' => 'reports#shift_eff_report'
         get 'machine_list' => 'reports#machine_list'
         get 'compare_report' => 'reports#compare_report'
         get 'overall_chart' => 'reports#compare_report1'

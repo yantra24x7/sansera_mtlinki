@@ -68,16 +68,20 @@ def self.j_c(a,b)
     key_list << "MacroVar_756_path1_#{jj[0]}"
     key_list << "MacroVar_757_path1_#{jj[0]}"
     end
-
+#byebug
 key_lists = L1SignalPoolActive.pluck(:signalname).uniq
 
 als = key_lists - key_list
 
 data = L1SignalPool.where(:enddate.gte => a, :updatedate.lte => b, :signalname.in=> als)#.delete_all
 #, :signalname.in=> als).delete_all
+byebug
+
+
+
 
 add = data.pluck(:signalname).uniq
-byebug
+
 add.each do |ad|
 if ad.split("_").first == "MacroVar"
 puts "NO"

@@ -1,0 +1,269 @@
+class Report
+
+  include Mongoid::Document
+  include Mongoid::Timestamps
+  #store_in collection: "report"
+  include Mongoid::Attributes::Dynamic
+  include Mongoid::Paranoia
+   
+  field :date, type: Date
+  field :shift_num, type: Integer
+  field :machine_name, type: String
+  field :time, type: String
+  field :line, type: String
+  field :efficiency, type: String
+  field :run_time, type: Integer
+  field :idle_time, type: Integer
+  field :alarm_time, type: Integer
+  field :disconnect, type: Integer
+  field :part_count, type: Integer
+  field :part_name, type: Array
+  field :program_number, type: Array
+  field :route_card_report, type: Array
+  field :duration, type: Integer
+  field :utilisation, type: Integer
+  field :availability, type: Float
+  field :perfomance, type: Float
+  field :quality, type: Float
+  field :oee, type: Float
+  field :target, type: Integer
+  field :actual, type: Integer
+  field :oee_data, type: Integer
+  field :operator, type: Array
+  field :operator_id, type: Array
+  field :component_id, type: Array
+  belongs_to :shift
+
+  index({date: 1, shift_num: 1, machine_name: 1})
+
+  def self.general_report(date, shift_no)
+ 
+    puts Time.now
+    data = []
+    oee_data = []
+    shift = Shift.find_by(shift_no:shift_no)
+    case
+    when shift.start_day == '1' && shift.end_day == '1'
+      start_time = (date+" "+shift.start_time).to_time
+      end_time = (date+" "+shift.end_time).to_time
+    when shift.start_day == '1' && shift.end_day == '2'
+      start_time = (date+" "+shift.start_time).to_time
+      end_time = (date+" "+shift.end_time).to_time+1.day
+    else
+      start_time = (date+" "+shift.start_time).to_time+1.day
+      end_time = (date+" "+shift.end_time).to_time+1.day
+    end
+    
+    duration = (end_time - start_time).to_i
+    mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+    mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[0]} 
+    machines = mac_lists.keys
+    
+    macro_list = []
+    machines.each do |jj|
+      macro_list << "MacroVar_750_path1_#{jj}" #Operator Id
+      macro_list << "MacroVar_751_path1_#{jj}" #Route Card
+      macro_list << "MacroVar_752_path1_#{jj}" #Operation Number
+      macro_list << "MacroVar_753_path1_#{jj}" #Setting
+      macro_list << "MacroVar_755_path1_#{jj}" #Idle Reason
+      macro_list << "MacroVar_756_path1_#{jj}" #Rejection
+      macro_list << "MacroVar_757_path1_#{jj}" #Rework
+    end
+
+    machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
+    p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
+    signal_logs = L1SignalPool.where(:signalname.in => macro_list, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
+    signal_log = L1SignalPoolActive.where(:signalname.in => macro_list)
+    bls = machines - machine_log.keys    
+    mer_req = bls.map{|i| [i,[]]}.to_h
+    machine_logs = machine_log.merge(mer_req)
+ 
+
+    machine_logs.each do |key, value|
+     puts key
+     operate = []
+     manual = []
+     disconnect = []
+     alarm = []
+     emergency = []
+     stop = []
+     suspend = []
+     warmup = []
+     
+     if value.count == 0
+       value << L1Pool.new(updatedate: start_time, enddate: end_time, timespan: duration, default: duration,  value: "DISCONNECT")
+     elsif value.count == 1
+       value.first[:updatedate] = start_time
+       value.first[:enddate] = end_time
+       value.first[:default] = (end_time - start_time).to_i
+       value.first[:timespan] = (end_time - start_time).to_i
+     else
+       value.first[:updatedate] = start_time
+       value.first[:timespan] = (value.first.enddate.to_time - start_time)
+       value.first[:default] = (value.first.enddate.to_time - start_time)
+       value.last[:enddate] = end_time
+       value.last[:timespan] = (end_time - value.last.updatedate.to_time)
+       value.last[:default] = (end_time - value.last.updatedate.to_time)
+     end
+     
+
+     
+     group_split =  value.group_by{|gg|gg[:value]}
+     puts value.pluck(:timespan).sum
+     group_split.each do |k,v|
+       case
+       when k == "OPERATE"
+        operate << v.pluck(:timespan).sum
+       when k == "MANUAL"
+        manual << v.pluck(:timespan).sum
+       when k == "DISCONNECT"
+        disconnect << v.pluck(:timespan).sum
+       when k == "ALARM"
+        alarm << v.pluck(:timespan).sum
+       when k == "EMERGENCY"
+        emergency << v.pluck(:timespan).sum
+       when k == "STOP"
+        stop << v.pluck(:timespan).sum
+       when k == "SUSPEND"
+        suspend << v.pluck(:timespan).sum
+       when k == "WARMUP"
+        warmup << v.pluck(:timespan).sum
+       end
+     end
+     
+     total_running_time = operate.sum + manual.sum + disconnect.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum
+     bls = duration - total_running_time
+     run_time = operate.sum
+     idle_time = (manual.sum + stop.sum + suspend.sum + warmup.sum)
+     alarm_time = (alarm.sum + emergency.sum)
+     disconnect = (disconnect.sum + bls)
+     utilisation = ((run_time*100) / duration)
+
+    # ---- Route Card ---- #
+    # MacroVar_751_path1_#{key} 
+     route_card_data = []
+     route_logs = signal_logs.select{|g| g.L1Name == key && g.signalname == "MacroVar_751_path1_#{key}"}
+     route_log = signal_log.select{|f| f.L1Name == key && f.signalname == "MacroVar_751_path1_#{key}"}
+     
+     if route_log.present?
+      if [start_time..end_time].include?(route_log.first.updatedate) || route_log.first.updatedate <= start_time
+        route_log.first[:enddate] = end_time.utc
+        #route_logs << lastdata.first
+        route_logs << route_log.first
+      end
+     end
+
+     
+     time_wise_route_card = []
+     
+     if route_logs.present?
+      if route_logs.count == 1
+        route_logs.first[:updatedate] = start_time
+        route_logs.first[:enddate] = end_time
+        route_logs.first[:timespan] = (end_time - start_time).to_i
+      else
+        route_logs.first[:updatedate] = start_time
+        route_logs.first[:timespan] = (route_logs.first.enddate.to_time - start_time)
+        route_logs.last[:enddate] = end_time
+        route_logs.last[:timespan] = (end_time - route_logs.last.updatedate.to_time)
+      end      
+      
+      route_logs.each do |kvalue|
+        if time_wise_route_card.count == 0
+          time_wise_route_card << kvalue
+        else
+          if time_wise_route_card[-1].value == kvalue.value || kvalue.value == nil || time_wise_route_card[-1].value == nil
+            time_wise_route_card << kvalue
+          else
+            time_wise_route_card << "##"
+            time_wise_route_card << kvalue
+          end
+        end
+      end
+     end
+     
+     time_wise_route_list = []
+     if time_wise_route_card.present?
+       cumulate_data = time_wise_route_card.split("##")
+       cumulate_data.each do |kk|
+         comp_id = kk.pluck(:value).compact.uniq.first
+         st_time = kk.first.updatedate
+         en_time = kk.last.enddate
+         time_wise_route_list << {comp_id: comp_id, st_time:st_time, ed_time: en_time}
+        end
+     end
+ 
+     
+     if time_wise_route_list.present?
+       time_wise_route_list.each do |data|
+         production_result  = p_result.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < data[:ed_time].localtime && sel.productresult != 0}
+         if production_result.present?
+           actual_produced =  production_result.pluck(:productresult).sum
+           product_start_time = production_result.first.updatedate.localtime
+           product_end_time = production_result.first.enddate.localtime
+           if start_time <= product_start_time
+           cycle_time = value.select{|jj| jj.enddate > product_start_time && jj.updatedate < product_end_time  && jj.value == "OPERATE"}.pluck(:timespan).sum
+            run_hr = data[:ed_time].to_i - data[:st_time].to_i
+            target = (run_hr/cycle_time).to_i
+             if target.to_f == 0.0
+               effe = 0
+             else
+               effe = actual_produced.to_f/target.to_f
+             end
+             effi = (effe * 100).to_i
+             
+           else
+          #  cycle_time = L1Pool.where(:L1Name=> key, :updatedate.gte => product_start_time, :enddate.lte => product_end_time, value: "OPERATE").pluck(:timespan).sum
+            cycle_time = L1Pool.where(:enddate.gte => product_start_time, :updatedate.lte => product_end_time, :enddate.lte => product_end_time, :L1Name=> key, value: "OPERATE").pluck(:timespan).sum
+ 
+           run_hr = data[:ed_time].to_i - data[:st_time].to_i
+            target = (run_hr/cycle_time).to_i
+            if target.to_f == 0.0
+               effe = 0
+             else
+               effe = actual_produced.to_f/target.to_f
+             end
+             effi = (effe * 100).to_i
+           end
+           #common
+           
+           float_value = data[:comp_id]%1
+           if float_value == 0
+            mode = "Production"
+           else
+            mode = "Setting"
+           end
+           rejection = signal_logs.select{|o| o.signalname == "MacroVar_756_path1_#{key}"}
+           rework =  signal_logs.select{|w| w.signalname == "MacroVar_757_path1_#{key}"}
+           oper_id = signal_logs.select{|q| q.signalname == "MacroVar_752_path1_#{key}"}
+           if key == "VALVE-C46"
+           beybug
+           end
+           puts rejection.count
+           puts rework.count
+           byebug           
+           route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: effi, line: key, tar: target, actual: actual_produced, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime}
+
+         else
+          float_value = data[:comp_id]%1
+          if float_value == 0
+           mode = "Production"
+          else
+           mode = "Setting"
+          end
+
+          route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: 0, line: key, tar: 0, actual: 0, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime, rejection: 0, rework: 0, opeation_no: 0}
+         end    
+       end
+     else
+
+     end
+     
+      
+    # ---- Route Card End  ---- #
+    end
+ 
+  end
+
+   
+end
