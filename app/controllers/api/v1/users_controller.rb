@@ -19,7 +19,8 @@ module Api
         Role.create(role_name: "QA")
 
         user = User.create(first_name: params[:first_name], last_name: params[:last_name], email: params[:email], password: params[:password], phone_no:params[:phone_no] , dup_password: nil, isactive: true, role: "Admin")
-       if User.last.email == params[:email]
+
+       if user.email == params[:email]
         Tenant.create(tenant_name: params[:tenant_name], address_line1: params[:address_line1], address_line2: params[:address_line2], city: params[:city], state: params[:state], country: params[:country], pincode: params[:pincode])
         status = true
        else

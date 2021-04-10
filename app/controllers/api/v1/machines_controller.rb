@@ -515,6 +515,7 @@ end
         
      if cur_st.present?
        final_data = cur_st.r_data            
+       byebug
        result_data = []
        final_data.group_by{|d| d[:line]}.map do |key1,value1|
        machine_status_list = []

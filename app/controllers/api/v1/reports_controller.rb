@@ -6,13 +6,17 @@ module Api
       render json: machine
      end
      def idle_report
-       
+#byebug       
        machine = params[:machine]#Machine.where(id: params[:machine_id]).ids
-       date = params[:date].to_date.strftime("%Y-%m-%d")
+       st_time = params[:date].present? ? params[:date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')
+       date = Date.strptime(st_time, '%m/%d/%Y')
+  
+      # date = params[:date].to_date.strftime("%Y-%m-%d")
        shift = params[:shift]#Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
 #       byebug
-       idle_report = IdleReasonActive.where(date:  date.to_time.strftime("%m-%d-%Y"), shift_no: shift, machine_name: machine)
-       render json: idle_report
+#       idle_report = IdleReasonActive.where(date:  date.to_time.strftime("%m-%d-%Y"), shift_no: shift, machine_name: machine)
+        idle_report = IdleReasonActive.where(date:  date, shift_no: shift, machine_name: machine) 
+      render json: idle_report
   #  data = CncHourReport.where(date: date, machine_id: machine, shift_no: shift)
 
      end     
