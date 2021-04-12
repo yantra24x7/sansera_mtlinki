@@ -27,8 +27,8 @@ module Api
         machine = params[:machine]
         line = params[:line]
         cur_st = CurrentStatus.last
-        byebug
-        data = cur_st.r_data.select{|i| i.machine == machine}
+       
+        data = cur_st.r_data.select{|i| i[:machine] == machine}
         operators = Operator.all
         root_card = "MacroVar_751_path1_#{machine}"
         op_id = "MacroVar_750_path1_#{machine}"
@@ -61,9 +61,8 @@ module Api
          job = root_card_id.first.value.to_i
         else
          job = "N/A"
-        end
-        
-        render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operator: operator, line: params[:line], machine: params[:machine], run_time: params[:run_time], stop: params[:stop], diconnect: params[:disconnect], utlization: params[:utlization], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value)}
+        end        
+        render json: {effe: data.first["efficiency"], target: data.first["tar"], actual: data.first["actual"], job: job, operator: operator, line: params[:line], machine: params[:machine], run_time: data.first["run"], stop: data.first["idle"], diconnect: data.first["dis"], utlization: data.first["run"], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value)}
     end
 
 

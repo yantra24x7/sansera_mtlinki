@@ -11,7 +11,7 @@ gem 'rails', '~> 5.1.7'
 # Use Puma as the app server
 #gem 'puma', '~> 3.7'
 #gem 'mongoid'
-gem 'bson_ext'
+#gem 'bson_ext'
 gem "bcrypt-ruby", :require => "bcrypt"
 gem 'jwt'
 gem 'simple_command'
@@ -30,7 +30,7 @@ gem 'mongoid-bcrypt-ruby'
 
 gem 'activemodel-serializers-xml'
 gem 'active_model_serializers'
-gem 'whenever', require: false
+gem 'whenever'#, require: false
 gem 'delayed_job_mongoid'
 gem 'mongoid_search'
 
