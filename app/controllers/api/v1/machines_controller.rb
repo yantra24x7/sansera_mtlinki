@@ -1,8 +1,77 @@
 module Api
   module V1
     class MachinesController < ApplicationController
-        
+   
     def live_machine_detail
+     date = Date.today.to_s
+     shift = Shift.current_shift
+
+        case
+        when shift.start_day == '1' && shift.end_day == '1'
+          start_time = (date+" "+shift.start_time).to_time
+          end_time = (date+" "+shift.end_time).to_time
+        when shift.start_day == '1' && shift.end_day == '2'
+          if Time.now.strftime("%p") == "AM"
+            start_time = (date+" "+shift.start_time).to_time-1.day
+            end_time = (date+" "+shift.end_time).to_time
+          else
+            start_time = (date+" "+shift.start_time).to_time
+            end_time = (date+" "+shift.end_time).to_time+1.day
+          end
+        else
+          start_time = (date+" "+shift.start_time).to_time
+          end_time = (date+" "+shift.end_time).to_time
+        end
+
+        duration  = (end_time - start_time).to_i
+        machine = params[:machine]
+        line = params[:line]
+        cur_st = CurrentStatus.last
+        byebug
+        data = cur_st.r_data.select{|i| i.machine == machine}
+        operators = Operator.all
+        root_card = "MacroVar_751_path1_#{machine}"
+        op_id = "MacroVar_750_path1_#{machine}"
+        key_list = ["MacroVar_751_path1_#{machine}"]
+        servo_temp = ["ServoTemp_0_path1_#{machine}", "ServoTemp_1_path1_#{machine}", "ServoTemp_2_path1_#{machine}"]
+        servo_load = ["ServoLoad_0_path1_#{machine}", "ServoLoad_1_path1_#{machine}"]
+        spendle_load = ["SpindleLoad_0_path1_#{machine}"]
+        sig_parms = L1SignalPoolActive.where(L1Name: machine)#, signalname: servo_load)
+        sv_load = sig_parms.where(:signalname.in => servo_load)
+        sp_load = sig_parms.where(:signalname.in => spendle_load)
+
+        col = []
+        col << root_card
+        col << op_id
+        macros = L1SignalPoolActive.where(:signalname.in => col)
+        operator_id = macros.select{|i| i[:signalname] == op_id}
+        root_card_id = macros.select{|i| i[:signalname] == root_card}
+         if operator_id.present?
+         sel_op = operators.select{|i| i[:operator_spec_id] == operator_id.first.value.to_i.to_s}
+         if sel_op.present?
+          operator = sel_op.first.operator_name
+         else
+          operator = "N/A"
+         end
+        else
+          operator = "N/A"
+        end
+
+        if root_card_id.present?
+         job = root_card_id.first.value.to_i
+        else
+         job = "N/A"
+        end
+        
+        render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operator: operator, line: params[:line], machine: params[:machine], run_time: params[:run_time], stop: params[:stop], diconnect: params[:disconnect], utlization: params[:utlization], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value)}
+    end
+
+
+
+
+
+     
+    def live_machine_detail1
 
         date = Date.today.to_s
         shift = Shift.current_shift
@@ -182,6 +251,18 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
 
    end
 
+  
+   
+  
+
+
+
+
+
+
+
+
+
 
     
     def line_wise_dashboard
@@ -207,8 +288,10 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
         duration  = (end_time - start_time).to_i
         cur_st1 = CurrentStatus.last
        
-        if cur_st1.present? && cur_st1.start_time.localtime == start_time.localtime &&  cur_st1.end_time.localtime == end_time.localtime && params[:live] != "true"        
-         m_name = cur_st1.data.first["first"].pluck(:name)
+        if cur_st1.present?# && cur_st1.start_time.localtime == start_time.localtime &&  cur_st1.end_time.localtime == end_time.localtime && params[:live] != "true"        
+        # m_name = cur_st1.data.first["first"].pluck(:name)
+#           byebug
+         m_name = cur_st1.r_data.pluck(:machine)
          col = []
          m_name.each do |jj|
          col << "MacroVar_605_path1_#{jj}"
@@ -217,12 +300,13 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
          status = L1PoolOpened.all
          list_of_reasons = IdleReason.all
          macros = L1SignalPoolActive.where(:signalname.in => col)
-          #cur_st.data.first["first"].each do |dd|
-         cur_st = cur_st1.data.first[:first].select{|li| li[:line] == params[:line]}
-          
+        #  #cur_st.data.first["first"].each do |dd|
+        # cur_st = cur_st1.data.first[:first].select{|li| li[:line] == params[:line]}
+         cur_st = cur_st1.r_data.select{|li| li[:line] == params[:line]} 
           cur_st.each do |dd|
-           colr = status.select{|i| i.L1Name == dd["name"]}
-           reason = macros.select{|i| i.L1Name == dd["name"]}
+#byebug
+           colr = status.select{|i| i.L1Name == dd["machine"]}
+           reason = macros.select{|i| i.L1Name == dd["machine"]}
            if colr.present?
              case
               when colr.first.value == "OPERATE"
@@ -515,7 +599,6 @@ end
         
      if cur_st.present?
        final_data = cur_st.r_data            
-       byebug
        result_data = []
        final_data.group_by{|d| d[:line]}.map do |key1,value1|
        machine_status_list = []
@@ -526,7 +609,7 @@ end
        else
          f_name = key1
        end
-   
+ 
        over_all_effi = value1.pluck(:efficiency).sum/value1.count
        low_perfom = value1.group_by { |x| x[:efficiency] }.min.last.first[:machine]
        log_per_tar = final_data.select{|i| i[:machine] == low_perfom}

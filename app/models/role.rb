@@ -5,8 +5,8 @@ class Role
 
   def self.dashboard
      all_data = []
-   # date = Date.today.to_s
-    date = "23-03-2021".to_date.to_s
+    date = Date.today.to_s
+   # date = "23-03-2021".to_date.to_s
     shift = Shift.current_shift
     case
     when shift.start_day == '1' && shift.end_day == '1'
