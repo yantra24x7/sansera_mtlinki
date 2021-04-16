@@ -1,0 +1,21 @@
+current directory: /home/ubuntu/Rails/sansera_mtlinki/vendor/cache/ruby/2.4.0/gems/bson-4.12.0/ext/bson
+/usr/local/rvm/rubies/ruby-2.4.2/bin/ruby -r ./siteconf20210413-15339-1orx3ae.rb extconf.rb
+creating Makefile
+
+current directory: /home/ubuntu/Rails/sansera_mtlinki/vendor/cache/ruby/2.4.0/gems/bson-4.12.0/ext/bson
+make "DESTDIR=" clean
+
+current directory: /home/ubuntu/Rails/sansera_mtlinki/vendor/cache/ruby/2.4.0/gems/bson-4.12.0/ext/bson
+make "DESTDIR="
+compiling bytebuf.c
+compiling endian.c
+compiling init.c
+compiling libbson-utf8.c
+compiling read.c
+compiling util.c
+compiling write.c
+linking shared-object bson_native.so
+
+current directory: /home/ubuntu/Rails/sansera_mtlinki/vendor/cache/ruby/2.4.0/gems/bson-4.12.0/ext/bson
+make "DESTDIR=" install
+/usr/bin/install -m 0755 bson_native.so ./.gem.20210413-15339-1jh4lpi

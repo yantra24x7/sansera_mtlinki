@@ -4,7 +4,7 @@ class Role
   validates :role_name, uniqueness: true  
 
   def self.dashboard
-     all_data = []
+    all_data = []
     date = Date.today.to_s
    # date = "23-03-2021".to_date.to_s
     shift = Shift.current_shift
@@ -40,6 +40,7 @@ class Role
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
     signal_logs = L1SignalPool.where(:signalname.in => macro_list, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
     signal_log = L1SignalPoolActive.where(:signalname.in => macro_list)
+    
     bls = machines - machine_log.keys
     mer_req = bls.map{|i| [i,[]]}.to_h
     machine_logs = machine_log.merge(mer_req)
@@ -293,10 +294,11 @@ class Role
 
    end
     if CurrentStatus.present?
-    CurrentStatus.last.update(r_data: all_data)
+    CurrentStatus.last.update(r_data: all_data, r_up_time: Time.now)
     else
-     CurrentStatus.create(r_data: all_data)
+     CurrentStatus.create(r_data: all_data, r_up_time: Time.now)
     end
+   puts Time.now
   end
  
 

@@ -756,11 +756,7 @@ end
         disconnect: 100
         }
 
-      end 
-	    
-	     
-
-
+      end
              mac_list = value1.pluck(:machine)
 	     mac_list.each do |m_list|
 	      colr = status.select{|i| i.L1Name == m_list}
@@ -778,10 +774,10 @@ end
 	       end
 	      machine_status_list << {machine: m_list, value: m_status}
 	     end
-	     result_data << {Line: f_name, eff: over_all_effi, low_perf_machine: low_perfom, machine_list: mac_list, lpt: lpt, lpa: lpa, status: machine_status_list, time: first}
+             
+	     result_data << {Line: f_name, eff: over_all_effi, low_perf_machine: low_perfom, machine_list: mac_list, lpt: lpt, lpa: lpa, status: machine_status_list, time: first, show_time: cur_st.r_up_time, shift_no: shift.shift_no}
 	    
-	    end
-
+	    end    
 	     render json: result_data
 	    else
 	       

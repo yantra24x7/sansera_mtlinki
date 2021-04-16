@@ -9,6 +9,35 @@ class Tenant
   field :country, type: String
   field :pincode, type: String
 
+  def self.dashboard
+     puts Time.now
+      date = Date.today.to_s
+    data = []
+    shift = Shift.current_shift#.find_by(shift_no:shift_no)
+    case
+    when shift.start_day == '1' && shift.end_day == '1'
+      start_time = (date+" "+shift.start_time).to_time
+      end_time = (date+" "+shift.end_time).to_time
+    when shift.start_day == '1' && shift.end_day == '2'
+      start_time = (date+" "+shift.start_time).to_time
+      end_time = (date+" "+shift.end_time).to_time+1.day
+    else
+      start_time = (date+" "+shift.start_time).to_time+1.day
+      end_time = (date+" "+shift.end_time).to_time+1.day
+    end
+     mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+     machines1 = mac_list.map{|list| list[0]}
+     machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
+     duration = (end_time - start_time).to_i
+   
+    machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
+    byebug
+  end
+
+
+
+
+
   def self.report(date, shift_no)
     puts Time.now
     data = []
