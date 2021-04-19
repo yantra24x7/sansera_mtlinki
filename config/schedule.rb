@@ -33,7 +33,7 @@ env :PATH, ENV['PATH']
 #  runner "Role.dashboard", :environment => :development
 #end
 
-every 60.minutes do
-  runner "L1PoolOpened.j_c",:environment => :development
-end
+#every 60.minutes do
+#  runner "L1PoolOpened.j_c",:environment => :development
+#end
  

@@ -44,9 +44,9 @@ end
 
 
 def self.cron_delay
- # date = Date.today.to_s
+  date = Date.today.to_s
  # date = Date.yesterday.to_s
-  date = "2021-04-10"
+ # date = "2021-04-10"
   Shift.all.each do |shift|
     case
     when shift.start_day == '1' && shift.end_day == '1'
@@ -67,11 +67,7 @@ def self.cron_delay
    unless Delayed::Job.where(run_at: end_time + 3.minutes).present?
      IdleReasonActive.delay(run_at: end_time + 3.minutes).idle_reason_report(date, shift.shift_no)
    end
-
-
-
   end
-
 end
 
 

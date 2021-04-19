@@ -567,8 +567,66 @@ end
 
 end
 
+    def r_get_status2
+       date = Date.today.to_s
+     shift = Shift.current_shift
+
+      cur_st = CurrentStatus.all
+      status = L1PoolOpened.all
+
+      if cur_st.present?
+       data = cur_st.last.r_data
+       result_data = []
+       data.group_by{|d| d[:line]}.map do |key1,value1|
+       machine_status_list = []
+       first = []
+       time = []
+       if key1 == nil
+         f_name = "Line1-1"
+       else
+         f_name = key1
+       end
+       over_all_effi = value1.pluck(:efficiency).sum/value1.count
+       low_perfom = value1.group_by { |x| x[:efficiency] }.min.last.first[:machine]
+       log_per_tar = data.select{|i| i[:machine] == low_perfom}
+
+       time << {run_time: log_per_tar.first[:run], stop: log_per_tar.first[:idle],  disconnect: log_per_tar.first[:dis] }
+       if log_per_tar.present?
+         lpt = log_per_tar.first[:tar]
+         lpa = log_per_tar.first[:actual]
+       else
+         lpt = 0
+         lpa = 0
+       end
+       mac_list = value1.pluck(:machine)
+             mac_list.each do |m_list|
+              colr = status.select{|i| i.L1Name == m_list}
+               if colr.present?
+                case
+                when colr.first.value == "OPERATE"
+                  m_status = "OPERATE"
+                when colr.first.value == "DISCONNECT"
+                  m_status = "DISCONNECT"
+                else
+                  m_status = "STOP"
+                end
+               else
+                m_status = "DISCONNECT"
+               end
+              machine_status_list << {machine: m_list, value: m_status}
+             end
+
+        result_data << {Line: f_name, eff: over_all_effi, low_perf_machine: low_perfom, machine_list: mac_list, lpt: lpt, lpa: lpa, status: machine_status_list, time: time, show_time: cur_st.first.r_up_time, shift_no: shift.shift_no}
 
 
+       end
+       
+      else
+       
+      end
+     render json: result_data
+
+    end
 
 
 	   
