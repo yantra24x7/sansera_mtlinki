@@ -1,5 +1,5 @@
 class ReportSerializer < ActiveModel::Serializer
-  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency, :route_card_report, :accept, :reject, :rework
+  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency, :route_card_report, :accept, :reject, :rework, :edit_reason
   def route_card_report
    object.route_card_report.each do |res|
      act = res["actual"]
@@ -85,7 +85,7 @@ class ReportSerializer < ActiveModel::Serializer
    @rewo = total_route_entry.pluck(:rework).sum
     @total_actual = total_route_entry.pluck(:actual).sum
     total_wasted_part = @rewo + @rej
- 
+         
       if @total_actual != 0 && @total_actual > total_wasted_part
        @good_part = @total_actual - total_wasted_part
        @qul = (@good_part.to_f/@total_actual.to_f)
@@ -117,5 +117,13 @@ class ReportSerializer < ActiveModel::Serializer
   end
   def rework
    @rewo
+  end
+
+  def edit_reason
+   if object.edit_reason == nil
+    []
+   else
+    []
+   end
   end
 end

@@ -92,6 +92,10 @@ Rails.application.routes.draw do
         get 'live_machine_detail' => 'machines#live_machine_detail'
         get 'idle_reports' => 'reports#idle_report'
 
+        get 'module_filters' => 'reports#module_filter'
+        get 'report_filters' => 'reports#report_filter'
+        get 'operator_filters' => 'reports#operator_filter'
+        put 're_reports' => 'reports#re_report'
         resources :components
         resources :oee_calculations        
         resources :idle_reasons

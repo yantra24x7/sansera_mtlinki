@@ -1,6 +1,58 @@
 module Api
   module V1
-  	class ReportsController < ApplicationController
+    class ReportsController < ApplicationController
+    
+     def module_filter
+      mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+      mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[1]}.keys
+      render json: mac_lists
+      
+     end
+
+     def report_filter
+      mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+      unless params[:line] == 'all'
+      mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[1]}
+      if mac_lists.present?
+       if mac_lists[params[:line]].present?
+        data = mac_lists[params[:line]].map{|i| i[0]}
+        render json: data
+       else
+        render json: "No Machine Found"
+       end
+      else
+        render json: "No Machine Found"
+      end
+      else
+       render json: mac_list.map{|i| i[0]}
+      end
+     end  
+ 
+
+     def operator_filter
+      st_time = params[:from_date].present? ? params[:from_date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')
+      en_time =   params[:from_date].present? ? params[:from_date].split('-')[1] : (Date.today - 1).strftime('%m/%d/%Y')
+
+      start_time = Date.strptime(st_time, '%m/%d/%Y')
+      end_time = Date.strptime(en_time, '%m/%d/%Y')
+
+      range = start_time.to_time..end_time.to_time
+      # machines = params[:machine_name].present? ? [params[:machine_name]] : L0Setting.pluck(:L0Name)
+      machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
+      # shifts = params[:shift_num].present? ? [params[:shift_num]] : Shift.pluck(:shift_no)
+      shifts = params[:shift_num] == "all" ? Shift.pluck(:shift_no) : [params[:shift_num]]
+
+      result = Report.where(date:range, :shift_num.in =>shifts, :machine_name.in => machines)
+      op_ids = result.pluck(:operator_id).sum.uniq
+      
+      operator_lists = Operator.where(:operator_spec_id.in => op_ids).pluck(:operator_spec_id, :operator_name)
+      render json: operator_lists
+     end 
+
+     def re_report
+      byebug
+     end
+
      def machine_list
       machine = L0Setting.pluck(:L0Name)
       render json: machine
@@ -33,8 +85,14 @@ module Api
       machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
       # shifts = params[:shift_num].present? ? [params[:shift_num]] : Shift.pluck(:shift_no)
       shifts = params[:shift_num] == "all" ? Shift.pluck(:shift_no) : [params[:shift_num]]
-      
+      if params[:select_type] == "Operatorwise" && params[:operator_id].present?
+        results = Report.where(date:range, :shift_num.in =>shifts, :machine_name.in => machines)
+        res_id = results.select{|i| i.operator_id.include?(params[:operator_id].to_i)}.pluck(:id)
+        
+        result = Report.where(:id.in=> res_id)
+      else     
       result = Report.where(date:range, :shift_num.in =>shifts, :machine_name.in => machines)
+      end
       render json: result
      end
 

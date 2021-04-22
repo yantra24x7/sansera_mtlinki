@@ -27,7 +27,7 @@ module Api
         machine = params[:machine]
         line = params[:line]
         cur_st = CurrentStatus.last
-       
+               
         data = cur_st.r_data.select{|i| i[:machine] == machine}
         operators = Operator.all
         root_card = "MacroVar_751_path1_#{machine}"
@@ -39,7 +39,13 @@ module Api
         sig_parms = L1SignalPoolActive.where(L1Name: machine)#, signalname: servo_load)
         sv_load = sig_parms.where(:signalname.in => servo_load)
         sp_load = sig_parms.where(:signalname.in => spendle_load)
-
+        op_num = sig_parms.where(:signalname=> "MacroVar_752_path1_#{machine}") 
+        if op_num.present?
+        op_number = op_num.pluck(:value).last.to_i
+        else
+         op_number = 0
+        end
+        
         col = []
         col << root_card
         col << op_id
@@ -62,7 +68,7 @@ module Api
         else
          job = "N/A"
         end        
-        render json: {effe: data.first["efficiency"], target: data.first["tar"], actual: data.first["actual"], job: job, operator: operator, line: params[:line], machine: params[:machine], run_time: data.first["run"], stop: data.first["idle"], diconnect: data.first["dis"], utlization: data.first["run"], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value)}
+        render json: {effe: data.first["efficiency"], target: data.first["tar"], actual: data.first["actual"], job: job, o_p_num: op_number,operator: operator, line: params[:line], machine: params[:machine], run_time: data.first["run"], stop: data.first["idle"], diconnect: data.first["dis"], utlization: data.first["run"], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value)}
     end
 
 
@@ -251,7 +257,56 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
    end
 
   
-   
+  def line_wise_dashboard
+    cur_st1 = CurrentStatus.last
+    if cur_st1.present?
+      m_name = cur_st1.r_data.pluck(:machine)
+      col = []
+      m_name.each do |jj|
+       col << "MacroVar_755_path1_#{jj}"
+      end
+
+      status = L1PoolOpened.all
+      list_of_reasons = IdleReason.all
+      macros = L1SignalPoolActive.where(:signalname.in => col)
+      cur_st = cur_st1.r_data.select{|li| li[:line] == params[:line]}
+      
+      cur_st.each do |dd|
+        colr = status.select{|i| i.L1Name == dd["machine"]}
+        reason = macros.select{|i| i.L1Name == dd["machine"]}
+        if colr.present?
+          case
+          when colr.first.value == "OPERATE"
+            dd[:status] = "OPERATE"
+            dd[:reason] = "N/A"
+          when colr.first.value == "DISCONNECT"
+            dd[:status] = "DISCONNECT"
+            dd[:reason] = "N/A"
+          else
+            dd[:status] = "STOP"
+            
+            if list_of_reasons.present?
+              sel_reason = list_of_reasons.select{|kk| kk.code == reason.first.value.to_i}
+              if sel_reason == []
+                dd[:reason] = "N/A"
+              else
+                dd[:reason] = sel_reason.first.reason
+              end
+            else
+              dd[:reason] = "N/A"
+            end
+          end
+        else
+          dd[:status] = "DISCONNECT"
+          dd[:reason] = "N/A"
+        end
+      end
+          render json: cur_st
+
+     # end
+    else
+    end
+  end 
   
 
 
@@ -264,7 +319,7 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
 
 
     
-    def line_wise_dashboard
+    def line_wise_dashboard1
       data2 = []
         date = Date.today.to_s
         shift = Shift.current_shift
@@ -293,7 +348,7 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
          m_name = cur_st1.r_data.pluck(:machine)
          col = []
          m_name.each do |jj|
-         col << "MacroVar_605_path1_#{jj}"
+         col << "MacroVar_755_path1_#{jj}"
          end
 
          status = L1PoolOpened.all

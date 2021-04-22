@@ -20,6 +20,8 @@ class Role
       end_time = (date+" "+shift.end_time).to_time+1.day
     end
 
+
+
     duration = (end_time - start_time).to_i
     mac_list = L0Setting.pluck(:L0Name, :L0EnName)
     mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[0]}
@@ -55,21 +57,21 @@ class Role
      stop = []
      suspend = []
      warmup = []
-
+     
      if value.count == 0
-       value << L1Pool.new(updatedate: start_time, enddate: end_time, timespan: duration, default: duration,  value: "DISCONNECT")
+       value << L1Pool.new(updatedate: start_time, enddate: Time.now.localtime, timespan: (Time.now.localtime - start_time), default: (Time.now.localtime - start_time),  value: "DISCONNECT")
      elsif value.count == 1
        value.first[:updatedate] = start_time
        value.first[:enddate] = end_time
-       value.first[:default] = (end_time - start_time).to_i
-       value.first[:timespan] = (end_time - start_time).to_i
+       value.first[:default] = (Time.now.localtime - start_time).to_i
+       value.first[:timespan] = (Time.now.localtime - start_time).to_i
      else
        value.first[:updatedate] = start_time
        value.first[:timespan] = (value.first.enddate.to_time - start_time)
        value.first[:default] = (value.first.enddate.to_time - start_time)
-       value.last[:enddate] = end_time
-       value.last[:timespan] = (end_time - value.last.updatedate.to_time)
-       value.last[:default] = (end_time - value.last.updatedate.to_time)
+       value.last[:enddate] = Time.now.localtime
+       value.last[:timespan] = (Time.now.localtime - value.last.updatedate.to_time)
+       value.last[:default] = (Time.now.localtime - value.last.updatedate.to_time)
      end
      
      group_split =  value.group_by{|gg|gg[:value]}
@@ -94,7 +96,9 @@ class Role
         warmup << v.pluck(:timespan).sum
        end
      end
-
+    #if key == 'PUMP-C58'
+    
+    #end
      total_running_time = operate.sum + manual.sum + disconnect.sum + alarm.sum + emergency.sum + stop.sum + suspend.sum + warmup.sum
      bls = duration - total_running_time
      run_time = operate.sum

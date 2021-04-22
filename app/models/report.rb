@@ -32,6 +32,7 @@ class Report
   field :operator, type: Array
   field :operator_id, type: Array
   field :component_id, type: Array
+  field :edit_reason, type: Array
   belongs_to :shift
 
   index({date: 1, shift_num: 1, machine_name: 1})

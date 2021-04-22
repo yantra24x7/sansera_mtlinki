@@ -64,7 +64,7 @@ puts mac[0]
         end
       
         selected_data = all_data.select{|i| i.value != 0.0 && i.value != nil}
- 
+        puts selected_data.pluck(:value) 
         cumulate_idle = []
         if selected_data.present?
           selected_data.each do |reason|
