@@ -1,7 +1,7 @@
 module Api
   module V1
     class ReportsController < ApplicationController
-    
+     before_action :set_report, only: [:re_report]    
      def module_filter
       mac_list = L0Setting.pluck(:L0Name, :L0EnName)
       mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[1]}.keys
@@ -48,9 +48,27 @@ module Api
       operator_lists = Operator.where(:operator_spec_id.in => op_ids).pluck(:operator_spec_id, :operator_name)
       render json: operator_lists
      end 
-
+     
+     def re_route_card
+      report = Report.find(params[:id])
+      if report.present?
+       render json: report#.route_card_report
+      else
+       render json: "Record Not Fount"
+      end
+     end
+     
      def re_report
-      byebug
+#       byebug
+#      report = Report.find(params[:id])
+#       byebug
+#       if report.present?
+       @report.update(report_params)
+#       render json: report
+#      else
+#       render json: "Record Not Fount"
+#      end
+      render json: @report
      end
 
      def machine_list
@@ -431,6 +449,23 @@ module Api
       end
       render json: {time: Time.at(tot_val).utc.strftime("%H:%M:%S"), tabel: data}
     end
+
+
+
+
+
+ private
+
+        # Use callbacks to share common setup or constraints between actions.
+        def set_report
+          @report = Report.find(params[:id])
+        end
+
+        def report_params
+          params.require(:report).permit!#(:date, :shift_num, :machine_name, :time, :line, :efficiency, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :availability, :perfomance, :quality, :oee, :target, :actual, :oee_data, :operator, :operator_id, :component_id, :edit_reason, :shift_id, :route_card_report => [])
+        end
+
+
 
 
     end

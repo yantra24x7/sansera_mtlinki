@@ -29,11 +29,16 @@ env :PATH, ENV['PATH']
 #  runner "CurrentStatus.current_shift_report", :environment => :development
 #end
 
-#every 1.minutes do
-#  runner "Role.dashboard", :environment => :development
-#end
+every 1.day, at: '12:10 am' do
+  runner "L1PoolOpened.cron_delay", :environment => :development
+end
 
-#every 60.minutes do
-#  runner "L1PoolOpened.j_c",:environment => :development
-#end
+
+every 1.minutes do
+  runner "Role.dashboard", :environment => :development
+end
+
+every 60.minutes do
+  runner "L1PoolOpened.j_c",:environment => :development
+end
  

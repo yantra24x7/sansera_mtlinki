@@ -285,7 +285,7 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
           else
             dd[:status] = "STOP"
             
-            if list_of_reasons.present?
+            if list_of_reasons.present? && reason.present?
               sel_reason = list_of_reasons.select{|kk| kk.code == reason.first.value.to_i}
               if sel_reason == []
                 dd[:reason] = "N/A"

@@ -96,6 +96,8 @@ Rails.application.routes.draw do
         get 'report_filters' => 'reports#report_filter'
         get 'operator_filters' => 'reports#operator_filter'
         put 're_reports' => 'reports#re_report'
+        get 're_route_cards' => 'reports#re_route_card'
+ 
         resources :components
         resources :oee_calculations        
         resources :idle_reasons

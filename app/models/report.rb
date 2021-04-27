@@ -144,7 +144,7 @@ class Report
      tot_rework =  signal_logs.select{|w| w.enddate > start_time && w.updatedate < end_time && w.signalname == "MacroVar_757_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i != 0}.sum
      tot_oper_id = signal_logs.select{|q| q.enddate > start_time && q.updatedate < end_time && q.signalname == "MacroVar_752_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
      tot_operator_id = signal_logs.select{|q| q.enddate > start_time && q.updatedate < end_time && q.signalname == "MacroVar_750_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
-     
+byebug     
      opr_lists = tot_operator_id.map(&:to_i)
      operator_names = []
     
@@ -184,7 +184,10 @@ class Report
 
      
      time_wise_route_card = []
-     
+ if key =='VALVE-C63'
+
+byebug    
+ end 
      if route_logs.present?
       if route_logs.count == 1
         route_logs.first[:updatedate] = start_time

@@ -14,6 +14,8 @@
 !/tmp/.keep
 /config/database.yml
 /config/mongoid.yml
+/config/schedule.rb
+/vendor/*
 .byebug_history
 Gemfile.lock
 

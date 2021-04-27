@@ -15,6 +15,35 @@ class L1PoolOpened
    field :Error, type: String
    field :Warning, type: String
 
+def self.insert_d
+    mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+    machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
+
+    key_list = []
+    machines.each do |jj|
+    key_list << "MacroVar_750_path1_#{jj[0]}"
+    key_list << "MacroVar_751_path1_#{jj[0]}"
+    key_list << "MacroVar_752_path1_#{jj[0]}"
+    key_list << "MacroVar_753_path1_#{jj[0]}"
+    key_list << "MacroVar_754_path1_#{jj[0]}"
+    key_list << "MacroVar_755_path1_#{jj[0]}"
+    key_list << "MacroVar_756_path1_#{jj[0]}"
+    key_list << "MacroVar_757_path1_#{jj[0]}"
+
+   tile =  L1SignalPool.where(L1Name: jj[0]).last.enddate.localtime
+  
+   a = L1SignalPoolCapped.where(:signalname.in=> key_list, :updatedate.gte => tile)
+   a.each do |b|
+     unless L1SignalPool.where(L1Name: b.L1Name, updatedate: b.updatedate, enddate: b.enddate, signalname: b.signalname).present?
+    L1SignalPool.create(L1Name: b.L1Name, updatedate: b.updatedate, enddate: b.enddate, timespan: b.timespan, signalname: b.signalname, value: b.value)
+    end
+    end
+    end
+
+end
+
+
+
 
 def self.j_c#(a,b)
     a = Date.yesterday.to_time 
@@ -36,17 +65,17 @@ def self.j_c#(a,b)
 key_lists = L1SignalPoolActive.pluck(:signalname).uniq
 
 als = key_lists - key_list
-
 data = L1SignalPool.where(:enddate.gte => a, :updatedate.lte => b, :signalname.in=> als)#.delete_all
+puts data.count
 data.delete_all
 
 end
 
 
 def self.cron_delay
- # date = Date.today.to_s
+  date = Date.today.to_s
  # date = Date.yesterday.to_s
-  date = "2021-04-10"
+ # date = "2021-04-10"
   Shift.all.each do |shift|
     case
     when shift.start_day == '1' && shift.end_day == '1'
