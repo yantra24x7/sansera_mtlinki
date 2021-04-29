@@ -63,15 +63,15 @@ class Role
      elsif value.count == 1
        value.first[:updatedate] = start_time
        value.first[:enddate] = end_time
-       value.first[:default] = (Time.now.localtime - start_time).to_i
+#       value.first[:default] = (Time.now.localtime - start_time).to_i
        value.first[:timespan] = (Time.now.localtime - start_time).to_i
      else
        value.first[:updatedate] = start_time
        value.first[:timespan] = (value.first.enddate.to_time - start_time)
-       value.first[:default] = (value.first.enddate.to_time - start_time)
+#       value.first[:default] = (value.first.enddate.to_time - start_time)
        value.last[:enddate] = Time.now.localtime
        value.last[:timespan] = (Time.now.localtime - value.last.updatedate.to_time)
-       value.last[:default] = (Time.now.localtime - value.last.updatedate.to_time)
+#       value.last[:default] = (Time.now.localtime - value.last.updatedate.to_time)
      end
      
      group_split =  value.group_by{|gg|gg[:value]}

@@ -6,7 +6,8 @@
 # Example:
 #
 #env :PATH, ENV['PATH']
-set :output, "/home/ubuntu/Rails/sansera_mtlinki/log/cron_log.log"
+#set :output, "/home/ubuntu/Rails/sansera_mtlinki/log/cron_log.log"
+set :output, "log/cron_log.log"
 env :PATH, ENV['PATH']
 #
 # every 2.hours do
