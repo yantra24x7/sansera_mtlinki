@@ -131,7 +131,7 @@ class Role
      idle_logs = signal_logs.select{|g| g.L1Name == key && g.signalname == "MacroVar_755_path1_#{key}"}
      
      if route_log.present?
-      if [start_time..end_time].include?(route_log.first.updatedate) || route_log.first.updatedate <= start_time
+      if (start_time..end_time).include?(route_log.first.updatedate) || route_log.first.updatedate <= start_time
         route_log.first[:enddate] = end_time.utc
         route_logs << route_log.first
       end
