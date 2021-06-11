@@ -97,7 +97,7 @@ end
         end
        
         def auth_user
-         if @current_user.role == "Admin"
+         if @current_user.role == "Admin" || @current_user.role == "Supervisor" || @current_user.role == "QA"
          else
           render json: "ok"
          end

@@ -37,13 +37,27 @@ class IdleReasonActive
 
      # machines = L0Setting.all.map{|i| [name: i[:L0Name], line: i[:line]]}.flatten.pluck(:name, :line)
 #      machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
-      
+#      byebug      
       idle_reason_key = []
-      machines.each do |jj|
-       idle_reason_key << "MacroVar_755_path1_#{jj[0]}"
+   #   machines.each do |jj|
+   #    idle_reason_key << "MacroVar_755_path1_#{jj[0]}"
+   #   end
+
+      
+      full_source = MachineSetting.where(group_signal: "MacroVar").pluck(:signal)
+      full_source.each do |kn|
+       kn.each do |val|
+        if val.first[0] == "idle_reason"
+          idle_reason_key << val.first[1]
+        end
+       end
       end
+#byebug
+
       reason_list = IdleReason.all.pluck(:code, :reason).group_by{|kk| kk[0]}
-      key_values = L1SignalPool.where(:signalname.in => idle_reason_key, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
+     
+#      key_values = L1SignalPool.where(:signalname.in => idle_reason_key, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
+      key_values = L1SignalPool.where(:signalname.in => idle_reason_key, :enddate.gte => start_time, :updatedate.lte => end_time)
       key_value = L1SignalPoolActive.where(:signalname.in => idle_reason_key)
       data = []
       machines.each do |mac|
@@ -68,12 +82,37 @@ puts mac[0]
         cumulate_idle = []
         if selected_data.present?
           selected_data.each do |reason|
+  
+            if reason.updatedate.localtime < start_time && reason.enddate.localtime > end_time
+              if reason_list[reason.value.to_i].present?
+             cumulate_idle << {idle_reason: reason_list[reason.value.to_i].first[1], idle_start: start_time.utc,  idle_end: end_time.utc, time: end_time.to_i - start_time.to_i }
+            else
+             cumulate_idle << {idle_reason: reason_list[reason.value.to_i], idle_start: start_time.utc,  idle_end: end_time.utc, time: end_time.to_i - start_time.to_i }
+            end
+
+            elsif reason.updatedate.localtime < start_time
+              if reason_list[reason.value.to_i].present?
+             cumulate_idle << {idle_reason: reason_list[reason.value.to_i].first[1], idle_start: start_time.utc,  idle_end: reason.enddate, time: (reason.enddate).to_i - start_time.to_i }
+            else
+             cumulate_idle << {idle_reason: reason_list[reason.value.to_i], idle_start: start_time,  idle_end: reason.enddate, time: (reason.enddate).to_i - start_time.to_i }
+            end             
+
+            elsif reason.enddate.localtime > end_time
+              if reason_list[reason.value.to_i].present?
+             cumulate_idle << {idle_reason: reason_list[reason.value.to_i].first[1], idle_start: reason.updatedate,  idle_end: end_time.utc, time: end_time.to_i - (reason.updatedate).to_i }
+            else
+             cumulate_idle << {idle_reason: reason_list[reason.value.to_i], idle_start: reason.updatedate,  idle_end: end_time.utc, time: end_time.to_i - (reason.updatedate).to_i }
+            end
+            else
+             
             if reason_list[reason.value.to_i].present?
              cumulate_idle << {idle_reason: reason_list[reason.value.to_i].first[1], idle_start: reason.updatedate,  idle_end: reason.enddate, time: (reason.enddate).to_i - (reason.updatedate).to_i }
             else
              cumulate_idle << {idle_reason: reason_list[reason.value.to_i], idle_start: reason.updatedate,  idle_end: reason.enddate, time: (reason.enddate).to_i - (reason.updatedate).to_i }
             end
-          end
+            end
+
+        end
         end
           data << {
                  

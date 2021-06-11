@@ -18,7 +18,7 @@ gem 'simple_command'
 gem 'mongo'
 gem 'mongoid'
 gem 'sidekiq'#, '~>6.0.0'
-
+gem 'daemons'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 # gem 'jbuilder', '~> 2.5'
 # Use Redis adapter to run Action Cable in production
@@ -33,6 +33,7 @@ gem 'active_model_serializers'
 gem 'whenever'#, require: false
 gem 'delayed_job_mongoid'
 gem 'mongoid_search'
+gem 'mongoid_fulltext'
 
 # Use soft delete for records
 gem 'mongoid_paranoia'

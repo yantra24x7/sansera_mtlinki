@@ -38,12 +38,34 @@ module Api
 
       range = start_time.to_time..end_time.to_time
       # machines = params[:machine_name].present? ? [params[:machine_name]] : L0Setting.pluck(:L0Name)
-      machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
+#      machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
       # shifts = params[:shift_num].present? ? [params[:shift_num]] : Shift.pluck(:shift_no)
-      shifts = params[:shift_num] == "all" ? Shift.pluck(:shift_no) : [params[:shift_num]]
+ 
+       if params[:module] == "all"
+      machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
+      else
+      mac_list = L0Setting.pluck(:L0Name)
+      mac_lists = mac_list.select{|i| i.split("-").first == params[:module]}
+      machines = mac_lists
+      end
 
+
+
+
+
+
+
+      shifts = params[:shift_num] == "all" ? Shift.pluck(:shift_no) : [params[:shift_num]]
+ 
       result = Report.where(date:range, :shift_num.in =>shifts, :machine_name.in => machines)
-      op_ids = result.pluck(:operator_id).sum.uniq
+      
+
+      op_ids1 = result.pluck(:operator_id)#.sum.uniq
+      if op_ids1.present?
+        op_ids = op_ids1.sum.uniq
+      else
+        op_ids = []
+      end
       
       operator_lists = Operator.where(:operator_spec_id.in => op_ids).pluck(:operator_spec_id, :operator_name)
       render json: operator_lists
@@ -70,6 +92,10 @@ module Api
 #      end
       render json: @report
      end
+     
+         
+
+
 
      def machine_list
       machine = L0Setting.pluck(:L0Name)
@@ -89,7 +115,40 @@ module Api
       render json: idle_report
   #  data = CncHourReport.where(date: date, machine_id: machine, shift_no: shift)
 
-     end     
+     end    
+
+      def idle_report_chart
+#byebug
+       machine = params[:machine]#Machine.where(id: params[:machine_id]).ids
+       st_time = params[:date].present? ? params[:date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')
+       date = Date.strptime(st_time, '%m/%d/%Y')
+       shift = params[:shift]#Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
+        idle_report = IdleReasonActive.where(date:  date, shift_no: shift, machine_name: machine)
+      ret_data = []
+     if idle_report.present?
+         rep_data = idle_report.first
+         tot_time = rep_data.total
+         repo_data = rep_data.data
+         cumul_data = repo_data.group_by{|kk| kk["idle_reason"]}
+         cumul_data.each do |k, val|
+           
+           tot_var = val.pluck(:time).sum
+           
+           percentage_val = ((tot_var*100)/tot_time.to_f).round(2)
+           ret_data << {name: k, y: percentage_val}
+         end
+        else
+        end
+      render json: ret_data
+
+     end
+
+
+
+
+
+
+ 
      def overall_chart
       
       st_time = params[:from_date].present? ? params[:from_date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')  
@@ -100,9 +159,28 @@ module Api
        
       range = start_time.to_time..end_time.to_time
       # machines = params[:machine_name].present? ? [params[:machine_name]] : L0Setting.pluck(:L0Name)
+      if params[:module] == "all"
       machines = params[:machine_name] == "all"  ? L0Setting.pluck(:L0Name) : [params[:machine_name]]
+      else
+      # if params[:machine_name] == "all"
+      #   machines = L0Setting.pluck(:L0Name)
+      # else
+      #   mac_list = L0Setting.pluck(:L0Name)
+      #   machines = mac_list.select{|kk| kk == params[:machine_name]}
+      # end
+       
+      mac_list = L0Setting.pluck(:L0Name, :L0EnName)
+      mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[1]}
+      if mac_lists[params[:module]].present?
+       machines = params[:machine_name] == "all"  ?  mac_lists[params[:module]].map{|i| i[0]} : [params[:machine_name]]
+      else
+       machines = []
+      end
+     # machines = mac_lists.keys
+      end
       # shifts = params[:shift_num].present? ? [params[:shift_num]] : Shift.pluck(:shift_no)
       shifts = params[:shift_num] == "all" ? Shift.pluck(:shift_no) : [params[:shift_num]]
+      
       if params[:select_type] == "Operatorwise" && params[:operator_id].present?
         results = Report.where(date:range, :shift_num.in =>shifts, :machine_name.in => machines)
         res_id = results.select{|i| i.operator_id.include?(params[:operator_id].to_i)}.pluck(:id)
@@ -138,8 +216,9 @@ module Api
       # shifts = params[:shift_num].present? ? [params[:shift_num]] : Shift.pluck(:shift_no)
       shifts = params[:shift_num]== "all" ? Shift.pluck(:shift_no) : [params[:shift_num]]
       result = Report.where(date:range , :shift_num.in =>shifts, :machine_name.in => machines)
-      
+     
        result.each do |jj|
+       
         result1 << {
           id: jj.id,
           created_at: jj.created_at,
@@ -151,6 +230,8 @@ module Api
           machine_name: jj.machine_name,
           part_count: jj.part_count,
           part_name: jj.part_name,
+          op_id: jj.route_card_report.pluck(:operator_id).uniq.flatten,
+          operator_name: jj.route_card_report.pluck(:operator_name).uniq.flatten,
           program_number: jj.program_number,
           run_time: Time.at(jj.run_time).utc.strftime("%H:%M:%S"),
           shift_id: jj.shift_id,

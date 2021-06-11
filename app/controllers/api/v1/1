@@ -32,7 +32,6 @@ module Api
         operators = Operator.all
 
       servo_load1 = []
-      servo_load2 = []
       root_card1 = []
       op_id1 = []
       op_num1 = []
@@ -52,36 +51,24 @@ module Api
       end
 
       
-      spindle_source_non_val = MachineSetting.where(group_signal: "SpindleLoad", L1Name: machine)#.pluck(:value)
-      if spindle_source_non_val.present?
-        spindle_source_max_value = spindle_source_non_val.first.max
-      else
-        spindle_source_max_value = 0
-      end
-      spindle_source = spindle_source_non_val.pluck(:value)
-      
+      spindle_source = MachineSetting.where(group_signal: "SpindleLoad", L1Name: machine).pluck(:value)
 #      servo_load1 = []
       servo_source = MachineSetting.where(group_signal: "ServoLoad", L1Name: machine).pluck(:signal, :value)
       servo_source.first.first.each do |kn|
-      
-       kn.each do |val|
+     byebug 
+       kn.first.each do |val|
       
         case
          when val.first == "x_axis" && val.second == true
           servo_load1 << servo_source.first.last[0]    
-          servo_load2 << "x_axis"
          when val.first == "y_axis" && val.second == true
           servo_load1 << servo_source.first.last[1]
-           servo_load2 << "y_axis"
          when val.first == "z_axis" && val.second == true
           servo_load1 << servo_source.first.last[2]
-           servo_load2 << "z_axis"
          when val.first == "a_axis" && val.second == true
           servo_load1 << servo_source.first.last[3]
-           servo_load2 << "a_axis"
          when val.first == "b_axis" && val.second == true
           servo_load1 << servo_source.first.last[4]
-           servo_load2 << "b_axis"
          else
            puts "ok"
         end
@@ -102,13 +89,11 @@ module Api
 
         servo_load = servo_load1#["ServoLoad_0_path1_#{machine}", "ServoLoad_1_path1_#{machine}"]
         spendle_load = spindle_source.first
-        spendle_load_log = L1SignalPool.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine, :signalname.in => spindle_source.first)
-
+       
         sig_parms = L1SignalPoolActive.where(L1Name: machine)#, signalname: servo_load)
         
         sv_load = sig_parms.where(:signalname.in => servo_load)
         sp_load = sig_parms.where(:signalname.in => spendle_load)
-       
 #        op_num = sig_parms.where(:signalname=> "MacroVar_752_path1_#{machine}") 
         op_num = sig_parms.where(:signalname=> op_num1.first)
 
@@ -141,7 +126,7 @@ module Api
         else
          job = "N/A"
         end        
-        render json: {effe: data.first["efficiency"], target: data.first["tar"], actual: data.first["actual"], job: job, o_p_num: op_number,operator: operator, line: params[:line], machine: params[:machine], run_time: data.first["run"], stop: data.first["idle"], diconnect: data.first["dis"], utlization: data.first["run"], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value), sv_axis:  servo_load2 ,  sp_max_val: spindle_source_max_value}
+        render json: {effe: data.first["efficiency"], target: data.first["tar"], actual: data.first["actual"], job: job, o_p_num: op_number,operator: operator, line: params[:line], machine: params[:machine], run_time: data.first["run"], stop: data.first["idle"], diconnect: data.first["dis"], utlization: data.first["run"], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value)}
     end
 
 
@@ -992,16 +977,7 @@ end
 		    def index
 			machines = L0Setting.all
 			machine_list = machines.map{|i| [id: i[:id], L0Name: i[:L0Name], ip: i[:NetworkSetting][:IpAddress], line: i[:line]]}
-			res_list = []
-                        machine_list.flatten.each do |lis|
-                          if MachineSetting.where(group_signal: "MacroVar", L1Name: lis[:L0Name]).present?
-                           lis[:tag_result] = true
-                          else
-                           lis[:tag_result] = false
-                          end
-                        end
-                        
-                        render json: machine_list.flatten
+			render json: machine_list.flatten
 		    end
 		    def machine_update
 		      

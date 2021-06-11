@@ -6,6 +6,10 @@ class ReportSerializer < ActiveModel::Serializer
      wat = res["rejection"] + res["rework"]
      res[:accept] = act - wat
    end
+  end
+
+  def efficiency
+     object.efficiency.to_f.round(2)
   end 
   def root_card
    if object.component_id == nil

@@ -23,5 +23,5 @@ class ProductResultHistory
     field :deleted_at, type: DateTime
 
     index({updatedate: 1, enddate: 1, productresult: 1 })
-
+    index({ L1Name: 1, productserialnumber: 1, updatedate: 1})
 end

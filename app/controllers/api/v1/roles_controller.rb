@@ -40,11 +40,65 @@ module Api
         @role.destroy
       end
 
+      def machine_signal_setting
+       create_setting = MachineSetting.setting(params)
+       render json: create_setting
+      end
+
+      def custome_signal_setting
+       create_setting = MachineSetting.macro_setting(params)
+       render json: create_setting
+      end
+      
+      def machine_settings
+        machine_settings = MachineSetting.where(L1Name: params[:L1Name])
+        render json: machine_settings
+      end      
+        
+      def edit_setting
+        data = MachineSetting.find(id: params[:id])
+        if data.group_signal == "SpindleLoad"
+          data.update(edit_params)
+          render json: data
+        elsif data.group_signal == "ServoLoad"
+         data.update(edit_params)
+         render json: data
+        else
+          data.update(edit_params)
+          render json: data
+        end
+      end
+
+      def edit_rec
+        data = MachineSetting.find(id: params[:id])
+        if data.group_signal == "SpindleLoad"
+         render json: data
+        elsif data.group_signal == "ServoLoad"
+         render json: data
+        else
+        data1 = []
+        data.signal.each do |key, value|
+         op = key.keys.first
+         data1 << {op=> key.values.first.split('_').second.to_i}
+        end
+          render json: data
+        end 
+       
+      end
+
+
+
       private
         # Use callbacks to share common setup or constraints between actions.
         def set_role
           @role = Role.find(params[:id])
         end
+        
+        def edit_params
+          params.require(:machine_setting).permit!#(:L1Name, :group_signal, :max, :signal[])
+        end
+
+#        end
 
         # Only allow a trusted parameter "white list" through.
         def role_params

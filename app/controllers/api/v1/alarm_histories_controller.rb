@@ -8,11 +8,12 @@ module Api
              
 	    	page_count = params[:per_page].present? ? params[:per_page] :10
                 search_value =  params[:search].present? ? params[:search] : ""
-             
+                      
                if params[:search] == ""
                  all_alarms = AlarmHistory.all.order_by(:updatedate.desc)
                 else
-                 all_alarms = AlarmHistory.full_text_search(search_value)
+       
+                 all_alarms = AlarmHistory.full_text_search(search_value)#, relevant_search: false)#, index_full_words: true)#, { :max_results => 5 })#, match: :any)#, relevant_search: true)
                 end
 
                # all_alarms = AlarmHistory.full_text_search(search_value)    

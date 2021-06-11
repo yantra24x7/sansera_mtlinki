@@ -32,6 +32,7 @@ class Report
   field :operator, type: Array
   field :operator_id, type: Array
   field :component_id, type: Array
+  field :edit_reason, type: Array
   belongs_to :shift
 
   index({date: 1, shift_num: 1, machine_name: 1})
@@ -69,8 +70,7 @@ class Report
       macro_list << "MacroVar_756_path1_#{jj}" #Rejection
       macro_list << "MacroVar_757_path1_#{jj}" #Rework
     end
-
-    machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
+    machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time, :L1Name.in => machines).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
     signal_logs = L1SignalPool.where(:signalname.in => macro_list, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
     signal_log = L1SignalPoolActive.where(:signalname.in => macro_list)
@@ -96,15 +96,15 @@ class Report
      elsif value.count == 1
        value.first[:updatedate] = start_time
        value.first[:enddate] = end_time
-       value.first[:default] = (end_time - start_time).to_i
+  #     value.first[:default] = (end_time - start_time).to_i
        value.first[:timespan] = (end_time - start_time).to_i
      else
        value.first[:updatedate] = start_time
        value.first[:timespan] = (value.first.enddate.to_time - start_time)
-       value.first[:default] = (value.first.enddate.to_time - start_time)
+ #      value.first[:default] = (value.first.enddate.to_time - start_time)
        value.last[:enddate] = end_time
        value.last[:timespan] = (end_time - value.last.updatedate.to_time)
-       value.last[:default] = (end_time - value.last.updatedate.to_time)
+#       value.last[:default] = (end_time - value.last.updatedate.to_time)
      end
          
      group_split =  value.group_by{|gg|gg[:value]}
@@ -143,17 +143,31 @@ class Report
      tot_rejection = signal_logs.select{|o| o.enddate > start_time && o.updatedate < end_time && o.signalname == "MacroVar_756_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}.sum
      tot_rework =  signal_logs.select{|w| w.enddate > start_time && w.updatedate < end_time && w.signalname == "MacroVar_757_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i != 0}.sum
      tot_oper_id = signal_logs.select{|q| q.enddate > start_time && q.updatedate < end_time && q.signalname == "MacroVar_752_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
-     tot_operator_id = signal_logs.select{|q| q.enddate > start_time && q.updatedate < end_time && q.signalname == "MacroVar_750_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
-     
-     opr_lists = tot_operator_id.map(&:to_i)
+     tot_operator_id = signal_logs.select{|q| q.enddate > start_time && q.updatedate < end_time && q.signalname == "MacroVar_750_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}#.reject! &:nan?
+
+  #  if tot_operator_id.include? Float::NAN 
+  #  tot_operator_id_lis = tot_operator_id.reject! &:nan?
+  #  else
+  #  tot_operator_id_lis = []
+  #  end
+
+
+  #   if key == 'PUMP-C86'
+  #    byebug
+  #   end
+
+     opr_lists = tot_operator_id#.map(&:to_i)
      operator_names = []
-    
      opr_lists.each do |op_li|
-      if operators[op_li.to_s].present?
-       operator_names << operators[op_li.to_s][0][1]
+     unless op_li.nan?
+      if operators[op_li.to_i.to_s].present?
+       operator_names << operators[op_li.to_i.to_s][0][1]
       else
        operator_names << "N/A"
       end
+     else
+      operator_names << "N/A"
+     end
      end
 
     
@@ -184,7 +198,6 @@ class Report
 
      
      time_wise_route_card = []
-     
      if route_logs.present?
       if route_logs.count == 1
         route_logs.first[:updatedate] = start_time
@@ -197,9 +210,6 @@ class Report
         route_logs.last[:timespan] = (end_time - route_logs.last.updatedate.to_time)
       end      
      
-#      if key == 'VALVE-C85'
-#       byebug
-#      end
  
       route_logs.each do |kvalue|
         if time_wise_route_card.count == 0 
@@ -228,20 +238,21 @@ class Report
         end
      end
      
-    # if key == "ELECTRICAL-C84"
-    #  byebug
-    # end
      
      if time_wise_route_list.present?
        time_wise_route_list.each do |data|
          production_result  = p_result.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < data[:ed_time].localtime && sel.productresult != 0}
 
-         opr_list = signal_logs.select{|o| o.enddate > data[:st_time].localtime && o.updatedate < data[:ed_time].localtime && o.signalname == "MacroVar_750_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}.map(&:to_i)
+         opr_list = signal_logs.select{|o| o.enddate > data[:st_time].localtime && o.updatedate < data[:ed_time].localtime && o.signalname == "MacroVar_750_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}#.map(&:to_i)
          
         operator_name = []
         opr_list.each do |op_li|
-         if operators[op_li.to_s].present?
-           operator_name << operators[op_li.to_s][0][1]
+          unless op_li.nan?
+         if operators[op_li.to_i.to_s].present?
+           operator_name << operators[op_li.to_i.to_s][0][1]
+         else
+           operator_name << "N/A"
+         end
          else
            operator_name << "N/A"
          end
@@ -294,7 +305,6 @@ class Report
               effe = (actual_produced.to_f/target.to_f)
             end
            end
-#byebug
            rejection = signal_logs.select{|o| o.enddate > data[:st_time].localtime && o.updatedate < data[:ed_time].localtime && o.signalname == "MacroVar_756_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}.sum
            rework =  signal_logs.select{|w| w.enddate > data[:st_time].localtime && w.updatedate < data[:ed_time].localtime && w.signalname == "MacroVar_757_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i != 0}.sum 
            oper_id = signal_logs.select{|q| q.enddate > data[:st_time].localtime && q.updatedate < data[:ed_time].localtime && q.signalname == "MacroVar_752_path1_#{key}"}.pluck(:value).uniq.select{|i| i!=nil && i!= 0}
@@ -333,7 +343,6 @@ class Report
 
     # ---- Calculation Start ---- #
          
-    # byebug
      total_count = route_card_data.pluck(:actual).sum
      total_target = route_card_data.pluck(:tar).sum
      total_route_entry = route_card_data.select{|u| u[:mode] != "No Entry" && u[:mode] != "Setting" && u[:efficiency] != 0}

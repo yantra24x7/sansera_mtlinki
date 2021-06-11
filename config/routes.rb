@@ -91,12 +91,19 @@ Rails.application.routes.draw do
         get 'line_wise_dashboards' => 'machines#line_wise_dashboard'
         get 'live_machine_detail' => 'machines#live_machine_detail'
         get 'idle_reports' => 'reports#idle_report'
+        get 'idle_report_chart' => 'reports#idle_report_chart'
 
         get 'module_filters' => 'reports#module_filter'
         get 'report_filters' => 'reports#report_filter'
         get 'operator_filters' => 'reports#operator_filter'
         put 're_reports' => 'reports#re_report'
         get 're_route_cards' => 'reports#re_route_card'
+        get 'machine_sig_setting' => 'roles#machine_signal_setting'
+        post 'custome_sig_setting' => 'roles#custome_signal_setting'   
+        get 'machine_setting_list' => 'roles#machine_settings'  
+        get 'machine_settings' => "roles#singal_machine_sett"
+        get 'edit_recs' => 'roles#edit_rec'
+        put 'edit_settings' => 'roles#edit_setting'
  
         resources :components
         resources :oee_calculations        
