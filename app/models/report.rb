@@ -38,7 +38,6 @@ class Report
   index({date: 1, shift_num: 1, machine_name: 1})
 
   def self.general_report(date, shift_no)
- 
 #    puts Time.now
     data = []
     oee_data = []
@@ -80,7 +79,7 @@ class Report
 
     machine_log = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time, :L1Name.in => machines).only(:L1Name, :value, :timespan, :updatedate, :enddate).group_by{|dd| dd[:L1Name]}
     p_result = ProductResultHistory.where(:enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
-    signal_logs = L1SignalPool.where(:signalname.in => macro_list, :enddate.gte => start_time, :updatedate.lte => end_time, :enddate.lte => end_time)
+    signal_logs = L1SignalPool.where(:signalname.in => macro_list, :enddate.gte => start_time, :updatedate.lte => end_time)#, :enddate.lte => end_time)
     signal_log = L1SignalPoolActive.where(:signalname.in => macro_list)
     bls = machines - machine_log.keys    
     mer_req = bls.map{|i| [i,[]]}.to_h
@@ -246,12 +245,11 @@ class Report
      
      if route_log.present?
       if [start_time..end_time].include?(route_log.first.updatedate) || route_log.first.updatedate <= start_time
-        route_log.first[:enddate] = end_time.utc
+        route_log.first[:enddate] = (((end_time - 1) + 1).utc).to_time 
         route_logs << route_log.first
       end
      end
-
-     
+ 
      time_wise_route_card = []
      if route_logs.present?
       if route_logs.count == 1
@@ -431,7 +429,7 @@ class Report
   #  t_quality = quality * 100
   #  t_perfomance = over_all_efficiency * 100
   #  oee = (availability * over_all_efficiency * quality) * 100
-
+    
      data << 
       {
       date: date,

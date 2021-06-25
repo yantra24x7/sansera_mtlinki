@@ -83,7 +83,7 @@ module Api
           servo_load1 << servo_source.first.last[4]
            servo_load2 << "b_axis"
          else
-           puts "ok"
+           puts "Servo Not Permit "
         end
        end
       end
@@ -102,7 +102,8 @@ module Api
 
         servo_load = servo_load1#["ServoLoad_0_path1_#{machine}", "ServoLoad_1_path1_#{machine}"]
         spendle_load = spindle_source.first
-        spendle_load_log = L1SignalPool.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine, :signalname.in => spindle_source.first)
+        spendle_load_log = L1SignalPool.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine, :signalname.in => spindle_source.first, :value.ne => nil)
+    
         sp_log_over_travel = spendle_load_log.select{|kj| kj.value > spindle_source_max_value}
         sp_log_over_travel_value = sp_log_over_travel.pluck(:updatedate, :enddate, :value)
         sp_log_over_res = {count: sp_log_over_travel.count, value: sp_log_over_travel_value}

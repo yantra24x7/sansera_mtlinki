@@ -46,10 +46,8 @@ end
 
 
 def self.j_c#(a,b)
- #   a = Date.yesterday.to_time 
- #   b = Time.now - 1.minutes    
-    a = "14-05-2021".to_time
-    b = "31-05-2021".to_time
+    a = Date.yesterday.to_time 
+    b = Time.now - 1.minutes    
 
     mac_list = L0Setting.pluck(:L0Name, :L0EnName)
     machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
@@ -76,9 +74,9 @@ end
 
 
 def self.cron_delay
- # date = Date.today.to_s
+  date = Date.today.to_s
  # date = Date.yesterday.to_s
-  date = "2021-05-31"
+ # date = "2021-05-31"
   Shift.all.each do |shift|
     case
     when shift.start_day == '1' && shift.end_day == '1'
