@@ -71,8 +71,10 @@ class Report
    # end
     
     mac_sett = MachineSetting.where(group_signal: "MacroVar").group_by{|d| d[:L1Name]}
-    if mac_sett.present?
-    macro_list = mac_sett.values.map{|i| i.first.value}.sum 
+    mac_sett2 = MachineSetting.where(group_signal: "MacroVar")
+    if mac_sett2.present?
+#     macro_list = mac_sett.map{|i| i.signal}.sum 
+     macro_list = mac_sett2.map{|i| i.signal}.flatten.map{|j| j.first[1]}
     else
      macro_list = []
     end

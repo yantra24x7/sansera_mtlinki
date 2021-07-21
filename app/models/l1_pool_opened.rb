@@ -48,6 +48,8 @@ end
 def self.j_c#(a,b)
     a = Date.yesterday.to_time 
     b = Time.now - 1.minutes    
+   # a = "10-06-2021".to_time
+   # b = "14-06-2021".to_time
 
     mac_list = L0Setting.pluck(:L0Name, :L0EnName)
     machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
@@ -75,8 +77,11 @@ end
 
 def self.cron_delay
   date = Date.today.to_s
- # date = Date.yesterday.to_s
+# date = Date.yesterday.to_s
+ #  dates = "08-06-2021".to_date.."25-06-2021".to_date
  # date = "2021-05-31"
+#  dates.each do |date1|
+# date = date1.to_s
   Shift.all.each do |shift|
     case
     when shift.start_day == '1' && shift.end_day == '1'
@@ -98,6 +103,8 @@ def self.cron_delay
      IdleReasonActive.delay(run_at: end_time + 3.minutes).idle_reason_report(date, shift.shift_no)
    end
   end
+#end
+
 end
 
 

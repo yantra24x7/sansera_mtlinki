@@ -18,13 +18,13 @@ class User
    field :deleted_at, type: DateTime
    field :date, type: Date, default: Time.now
    field :role, type: String
+   field :module, type: Array, default: []
    
    validates :email, :phone_no, uniqueness: true
    validates :first_name, :last_name, :email, :role,:phone_no, :password, presence: true
    before_create :encrypt_password
   
    def self.authenticate(email, password)
-   byebug
      user = User.find_by(email: email)
      if user && BCrypt::Password.new(user.password) == password
        user

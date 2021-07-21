@@ -5,7 +5,13 @@ module Api
      def module_filter
       mac_list = L0Setting.pluck(:L0Name, :L0EnName)
       mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[1]}.keys
-      render json: mac_lists
+       
+      if @current_user.module == []
+       mac_lists1 = mac_lists
+      else
+       mac_lists1 = @current_user.module
+      end
+      render json: mac_lists1
       
      end
 
@@ -81,10 +87,15 @@ module Api
      end
      
      def re_report
-#       byebug
+      
 #      report = Report.find(params[:id])
 #       byebug
 #       if report.present?
+       report_params[:run_time] = @report.run_time
+       report_params[:idle_time] = @report.idle_time
+       report_params[:alarm_time] = @report.alarm_time
+       report_params[:duration] = @report.duration
+       report_params[:availability] = @report.availability
        @report.update(report_params)
 #       render json: report
 #      else

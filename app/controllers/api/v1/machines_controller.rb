@@ -29,6 +29,7 @@ module Api
         cur_st = CurrentStatus.last
                
         data = cur_st.r_data.select{|i| i[:machine] == machine}
+        
         operators = Operator.all
 
       servo_load1 = []
@@ -721,9 +722,19 @@ end
 
       cur_st = CurrentStatus.all
       status = L1PoolOpened.all
-
+      
       if cur_st.present?
-       data = cur_st.last.r_data
+       data = []
+       data3 = cur_st.last.r_data
+       filter_module = @current_user.module
+       data3.each do |gr_data|
+        if filter_module == []
+        data << gr_data
+        elsif filter_module.include?(gr_data['line'])
+        data << gr_data
+        end
+       end
+   #    data = data3.select{|i| i['line'] == "ELECTRICAL"}
        result_data = []
        data.group_by{|d| d[:line]}.map do |key1,value1|
        machine_status_list = []
