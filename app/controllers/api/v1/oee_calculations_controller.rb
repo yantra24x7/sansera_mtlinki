@@ -24,7 +24,6 @@ class OeeCalculationsController < ApplicationController
         end
        end
       end
-
       status = L1PoolOpened.all
       list_of_reasons = IdleReason.all
       macros = L1SignalPoolActive.where(:signalname.in => col)
@@ -32,7 +31,11 @@ class OeeCalculationsController < ApplicationController
       if params[:line].present?
       cur_st = cur_st1.r_data.select{|li| li[:line] == params[:line]}
       else
+       if @current_user.module == []
       cur_st = cur_st1.r_data
+       else
+        cur_st = cur_st1.r_data.select{|li| li[:line] == @current_user.module.first}
+       end
       end
       cur_st.each do |dd|
         colr = status.select{|i| i.L1Name == dd["machine"]}
