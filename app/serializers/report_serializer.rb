@@ -1,5 +1,5 @@
 class ReportSerializer < ActiveModel::Serializer
-  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency, :route_card_report, :accept, :reject, :rework, :edit_reason, :ncq
+  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency, :route_card_report, :accept, :reject, :rework, :edit_reason, :ncq, :ope_no
   def route_card_report
    object.route_card_report.each do |res|
      act = res["actual"]
@@ -167,5 +167,9 @@ class ReportSerializer < ActiveModel::Serializer
    else
     object.edit_reason
    end
+  end
+
+  def ope_no
+    object.route_card_report.map{|i| i[:opeation_no]}.flatten
   end
 end

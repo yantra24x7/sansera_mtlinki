@@ -41,9 +41,14 @@ module Api
           low_per_machine = low_perfom.machine_name
           low_per_target = low_perfom.target
           low_per_actual = low_perfom.part_count
-          low_per_run = Time.at(low_perfom.run_time).utc.strftime("%H:%M:%S")
-          low_per_idle = Time.at(low_perfom.idle_time+low_perfom.alarm_time).utc.strftime("%H:%M:%S")
-          low_per_stop =  Time.at(low_perfom.disconnect).utc.strftime("%H:%M:%S")
+          
+          low_per_run = ((low_per_actual/(end_time-start_time))*100).round(2)
+      #    low_per_run = Time.at(low_perfom.run_time).utc.strftime("%H:%M:%S")
+          low_per_idle = (((low_perfom.idle_time+low_perfom.alarm_time)/(end_time-start_time))*100).round(2)   
+      #    low_per_idle = Time.at(low_perfom.idle_time+low_perfom.alarm_time).utc.strftime("%H:%M:%S")
+          low_per_stop = ((low_perfom.disconnect/(end_time-start_time))*100).round(2)
+      #     low_per_stop =  Time.at(low_perfom.disconnect).utc.strftime("%H:%M:%S")
+
           mac_list = value1.pluck(:machine_name)
          machine_status_list = []
           mac_list.each do |mc_list|
