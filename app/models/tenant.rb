@@ -8,6 +8,7 @@ class Tenant
   field :state, type: String
   field :country, type: String
   field :pincode, type: String
+  field :color_code, type: String
 
   def self.dashboard
      puts Time.now

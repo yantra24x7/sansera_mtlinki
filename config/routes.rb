@@ -104,6 +104,7 @@ Rails.application.routes.draw do
         get 'machine_settings' => "roles#singal_machine_sett"
         get 'edit_recs' => 'roles#edit_rec'
         put 'edit_settings' => 'roles#edit_setting'
+        get 'prev_dashboards' => "shifts#prev_dashboard"
  
         resources :components
         resources :oee_calculations        

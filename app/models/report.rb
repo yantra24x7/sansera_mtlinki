@@ -33,6 +33,9 @@ class Report
   field :operator_id, type: Array
   field :component_id, type: Array
   field :edit_reason, type: Array
+  field :accept, type: Integer
+  field :reject, type: Integer
+  field :rework, type: Integer
   belongs_to :shift
 
   index({date: 1, shift_num: 1, machine_name: 1})
@@ -375,7 +378,7 @@ class Report
              mode = "Setting"
            end
      
-           route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: (effe*100).round(2), line: mac_lists[key].first[1], tar: target, actual: actual_produced, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime, rejection: rejection, rework: rework, opeation_no: oper_id, operator_id: opr_list, operator_name: operator_name}
+           route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: (effe*100).round(2), line: mac_lists[key].first[1], tar: target, actual: actual_produced, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime, rejection: rejection, rework: rework, opeation_no: oper_id, operator_id: opr_list, operator_name: operator_name, rejection1: 0}
 
          else
           float_value = data[:comp_id]%1
@@ -387,11 +390,11 @@ class Report
            mode = "Setting"
           end
    
-          route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: 0, line: mac_lists[key].first[1], tar: 0, actual: 0, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime, rejection: 0, rework: 0, opeation_no: [], operator_id: opr_list, operator_name: operator_name}
+          route_card_data << {mode: mode, card_no: data[:comp_id].to_i, machine: key, efficiency: 0, line: mac_lists[key].first[1], tar: 0, actual: 0, rout_start: data[:st_time].localtime, rout_end: data[:ed_time].localtime, rejection: 0, rework: 0, opeation_no: [], operator_id: opr_list, operator_name: operator_name,rejection1: 0}
          end    
        end
      else
-      route_card_data << {mode: "No Entry", card_no: "No Card", machine: key, efficiency: 0, line: mac_lists[key].first[1], tar: 0, actual: total_count_shift, rout_start: start_time, rout_end: end_time, rejection: tot_rejection, rework: tot_rework, opeation_no: tot_oper_id, operator_id: opr_lists, operator_name: operator_names }
+      route_card_data << {mode: "No Entry", card_no: "No Card", machine: key, efficiency: 0, line: mac_lists[key].first[1], tar: 0, actual: total_count_shift, rout_start: start_time, rout_end: end_time, rejection: tot_rejection, rework: tot_rework, opeation_no: tot_oper_id, operator_id: opr_lists, operator_name: operator_names, rejection1: 0}
      end
      
       

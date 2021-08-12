@@ -18,6 +18,22 @@ class NotificationSetting
    end
   end 
 
+ def self.sent_notification
+ # NotificationMailer.notification("test") 
+ mac_list = L1PoolOpened.all
+ data = []
+ mac_list.each do |rec|
+  if  rec.value == "STOP"
+    time_rec = (Time.now - rec.updatedate).to_i
+  if time_rec > 900
+   data << rec
+  end
+  end
+ end
+  if data.present?
+  NotificationMailer.notification(data).deliver_now
+  end
+ end
 
 
   def self.test_thread

@@ -10,6 +10,82 @@ class OeeCalculationsController < ApplicationController
     render json: @oee_calculations
   end
 
+  def kpy
+    cur_st1 = CurrentStatus.last
+    if cur_st1.present?
+      m_name = cur_st1.r_data.pluck(:machine)
+      col = []
+
+      full_source = MachineSetting.where(group_signal: "MacroVar").pluck(:signal)
+      full_source.each do |kn|
+       kn.each do |val|
+        if val.first[0] == "idle_reason"
+          col << val.first[1]
+        end
+       end
+      end
+
+      status = L1PoolOpened.all
+      list_of_reasons = IdleReason.all
+      macros = L1SignalPoolActive.where(:signalname.in => col)
+      
+      if params[:line].present?
+      cur_st = cur_st1.r_data.select{|li| li[:line] == params[:line]}
+      else
+      cur_st = cur_st1.r_data
+      end
+      cur_st.each do |dd|
+        colr = status.select{|i| i.L1Name == dd["machine"]}
+        reason = macros.select{|i| i.L1Name == dd["machine"]}
+        
+       dd[:aval] = dd["run"]/100.to_f
+       dd[:perff] = dd["efficiency"]/100.to_f
+        if dd["actual"] != 0
+          dd[:qual] = 1
+          dd[:quality] = 100
+        else
+          dd[:qual] = 0
+          dd[:quality] = 100
+        end
+
+        dd[:oee_data] =  dd[:aval]*dd[:perff]*dd[:qual]
+        dd[:oee] = dd[:oee_data]*100
+
+        
+         if colr.present?
+          case
+          when colr.first.value == "OPERATE"
+            dd[:status] = "OPERATE"
+            dd[:reason] = "N/A"
+          when colr.first.value == "DISCONNECT"
+            dd[:status] = "DISCONNECT"
+            dd[:reason] = "N/A"
+          else
+            dd[:status] = "STOP"
+              if list_of_reasons.present? && reason.present?
+              sel_reason = list_of_reasons.select{|kk| kk.code == reason.first.value.to_i}
+              if sel_reason == []
+                dd[:reason] = "N/A"
+              else
+                dd[:reason] = sel_reason.first.reason
+              end
+            else
+              dd[:reason] = "N/A"
+            end
+          end
+        else
+          dd[:status] = "DISCONNECT"
+          dd[:reason] = "N/A"
+        end
+      end
+          render json: cur_st
+
+     # end
+    else
+    end
+
+  end
+
   def oee_machine_list
     data = []
     machines = L0Setting.pluck(:id, :L0Name)

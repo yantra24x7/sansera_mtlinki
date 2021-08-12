@@ -1,0 +1,31 @@
+ <!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h1>The below Cnc machines are stoped more than 15 Mins</h1>
+    
+     <table>
+  <thead>
+    <tr>
+      
+      <th>Machine Name</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @stop_machine.each do |mac| %>
+      
+      <tr>
+       
+        <td><%= mac.L1Name %></td>
+        <td>STOP</td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+      
+  </body>
+</html>

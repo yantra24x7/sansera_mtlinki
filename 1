@@ -95,7 +95,8 @@ module Api
        report_params[:idle_time] = @report.idle_time
        report_params[:alarm_time] = @report.alarm_time
        report_params[:duration] = @report.duration
-       report_params[:availability] = @report.availability 
+       report_params[:availability] = @report.availability
+   byebug  
      @report.update(report_params)
 #       render json: report
 #      else

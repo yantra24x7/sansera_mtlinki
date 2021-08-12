@@ -349,17 +349,6 @@ render json: {effe: over_eff, target: tot_tar, actual: act_tar, job: job, operat
        end
       end
 
-
-
-
-   #   m_name.each do |jj|
-   #    col << "MacroVar_755_path1_#{jj}"
-   #   end
-
-     
-
-
-
       status = L1PoolOpened.all
       list_of_reasons = IdleReason.all
       macros = L1SignalPoolActive.where(:signalname.in => col)
@@ -717,7 +706,7 @@ end
 end
 
     def r_get_status2
-       date = Date.today.to_s
+     date = Date.today.to_s
      shift = Shift.current_shift
 
       cur_st = CurrentStatus.all
