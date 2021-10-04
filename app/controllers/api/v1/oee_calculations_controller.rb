@@ -38,6 +38,7 @@ class OeeCalculationsController < ApplicationController
        end
       end
       cur_st.each do |dd|
+        dd["up_time"] = cur_st1.r_up_time.localtime
         colr = status.select{|i| i.L1Name == dd["machine"]}
         reason = macros.select{|i| i.L1Name == dd["machine"]}
         

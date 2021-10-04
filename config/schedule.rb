@@ -39,8 +39,8 @@ every 15.minutes do
 end
 
 
-every 1.minutes do
-#  runner "Role.dashboard", :environment => :development
+every 3.minutes do
+  runner "NotificationSetting.dashboard", :environment => :development
 end
 
 every 60.minutes do

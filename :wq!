@@ -1,0 +1,9 @@
+ development:
+   clients:
+     default:
+       database: MTLINKi
+       hosts:
+          - 103.114.208.206:27017
+       options:
+          user: 'fanuc'
+          password: 'yantra24x7'

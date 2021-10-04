@@ -39,6 +39,7 @@ module Api
           over_all_effi = value1.pluck(:efficiency).map{|i| i.to_i}.sum/value1.count
           low_perfom = value1.group_by { |x| x[:efficiency] }.min.last.first
           low_per_machine = low_perfom.machine_name
+          low_line = low_per_machine.split("-").first
           low_per_target = low_perfom.target
           low_per_actual = low_perfom.part_count
           
@@ -67,7 +68,7 @@ module Api
             end
               machine_status_list << {machine: mc_list, value: m_status}
           end
-          result_data << {Line: low_perfom.machine_name, eff: over_all_effi, low_perf_machine: low_perfom.machine_name, machine_list: value1.pluck(:machine_name), lpt: low_per_target, lpa: low_per_actual, status: machine_status_list, time: Time.now, show_time: Time.now, shift_no: params[:shift_no], low_per_run_time: low_per_run, low_per_idle_time: low_per_idle, low_per_stop_time: low_per_stop}
+          result_data << {Line: low_line, eff: over_all_effi, low_perf_machine: low_perfom.machine_name, machine_list: value1.pluck(:machine_name), lpt: low_per_target, lpa: low_per_actual, status: machine_status_list, time: Time.now, show_time: Time.now, shift_no: params[:shift_no], low_per_run_time: low_per_run, low_per_idle_time: low_per_idle, low_per_stop_time: low_per_stop}
         end        
           render json: result_data
        else

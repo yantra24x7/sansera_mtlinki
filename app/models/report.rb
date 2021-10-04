@@ -35,7 +35,8 @@ class Report
   field :edit_reason, type: Array
   field :accept, type: Integer
   field :reject, type: Integer
-  field :rework, type: Integer
+  field :rework, type: Integer 
+  field :chart_data, type: Array
   belongs_to :shift
 
   index({date: 1, shift_num: 1, machine_name: 1})
@@ -150,6 +151,29 @@ class Report
      disconnect = (disconnect.sum + bls)
      utilisation = ((run_time*100) / duration)
      total_count_shift = p_result.select{|d| d.L1Name == key && d.productresult != 0 && d.productresult != nil}.pluck(:productresult).sum
+     chart_data = []
+     part_result_data = p_result.select{|d| d.L1Name == key && d.productresult != 0 && d.productresult != nil}
+     part_result_data.each do |part_ind|
+      if part_ind.updatedate.localtime < start_time
+        parts_signal_data = L1Pool.where(:updatedate.gte => part_ind.updatedate.localtime, L1Name: key, :enddate.lte => part_ind.enddate.localtime)
+        single_part_filter = parts_signal_data.select{|hh| hh.updatedate >= part_ind.updatedate.localtime && hh.value == "OPERATE"}
+        if single_part_filter.present?
+           chart_data << {load_start: part_ind.updatedate.localtime, load_end:single_part_filter.first.updatedate.localtime , cycle_start: single_part_filter.first.updatedate.localtime, cycle_end: part_ind.enddate.localtime, operate: true} 
+        else
+           chart_data << {load_start: part_ind.updatedate.localtime, load_end:part_ind.enddate.localtime, cycle_start: part_ind.updatedate.localtime, cycle_end: part_ind.enddate.localtime, operate: false}
+        end
+      else
+       single_part_filter = value.select{|m| m.updatedate >= part_ind.updatedate.localtime && m.enddate <= part_ind.enddate.localtime && m.value == "OPERATE"}
+ #      single_part_filter = parts_signal_data.select{|hh| hh.updatedate >= part_ind.updatedate.localtime && hh.value == "OPERATE"}
+       if single_part_filter.present?
+           chart_data << {load_start: part_ind.updatedate.localtime, load_end:single_part_filter.first.updatedate.localtime , cycle_start: single_part_filter.first.updatedate.localtime, cycle_end: part_ind.enddate.localtime, operate: true}
+        else
+           chart_data << {load_start: part_ind.updatedate.localtime, load_end:part_ind.enddate.localtime, cycle_start: part_ind.updatedate.localtime, cycle_end: part_ind.enddate.localtime, operate: false}
+        end
+      end
+     end
+
+ 
     # -- test code -- #
       operator_id_1a = []
       route_card_1a = []
@@ -359,8 +383,7 @@ class Report
             target = (running_hour/cycle_time).to_i
             if target.to_f == 0.0
               effe = 0
-            else
-             
+            else             
               effe = (actual_produced.to_f/target.to_f)
             end
            end
@@ -399,6 +422,10 @@ class Report
      
       
     # ---- Route Card End  ---- #
+ 
+    # ---- Cycle Time Start ---- #
+     
+    # ---- Cycle Time End ---- #
 
     # ---- Calculation Start ---- #
          
@@ -464,7 +491,8 @@ class Report
      
       operator: operator_names,
       operator_id: opr_lists,
-      route_card_report: route_card_data
+      route_card_report: route_card_data,
+      chart_data: chart_data
       } 
 
     end
@@ -473,11 +501,11 @@ class Report
 
       unless Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).present?
 
-        report = Report.create(time: data1[:time], date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee], target: data1[:target], actual: data1[:actual], efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report])
+        report = Report.create(time: data1[:time], date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee], target: data1[:target], actual: data1[:actual], efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report], chart_data: data1[:chart_data])
        else
         report = Report.where(date: data1[:date], shift_num: data1[:shift_num], machine_name:data1[:machine_name]).last
 
-        report.update(time: data1[:time], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee],target: data1[:target], actual: data1[:actual],efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report])
+        report.update(time: data1[:time], run_time:data1[:run_time], idle_time: data1[:idle_time], disconnect: data1[:disconnect], part_count: data1[:part_count], part_name: data1[:part_name], program_number: data1[:program_number], shift_id: data1[:shift_id], duration: data1[:duration], utilisation: data1[:utilisation], oee_data: data1[:oee], alarm_time: data1[:alarm_time], availability: data1[:availability], perfomance: data1[:perfomance], quality:data1[:quality], oee: data1[:oee],target: data1[:target], actual: data1[:actual],efficiency: data1[:efficiency], line: data1[:line], component_id: data1[:component_id], operator: data1[:operator], operator_id: data1[:operator_id], route_card_report: data1[:route_card_report], chart_data: data1[:chart_data])
       end
     end
 

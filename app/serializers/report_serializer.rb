@@ -1,5 +1,5 @@
 class ReportSerializer < ActiveModel::Serializer
-  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency, :route_card_report, :accept, :reject, :rework, :edit_reason, :ncq, :ope_no
+  attributes :id, :time, :date, :shift_num, :machine_name, :run_time, :idle_time, :alarm_time, :disconnect, :part_count, :part_name, :program_number, :duration, :utilisation, :shift_id, :target, :actual, :availability, :perfomance, :quality, :oee, :line, :operator, :operator_id, :root_card, :efficiency, :route_card_report, :accept, :reject, :rework, :edit_reason, :ncq, :ope_no, :chart_data
   def route_card_report
    object.route_card_report.each do |res|
      act = res["actual"]
@@ -171,5 +171,20 @@ class ReportSerializer < ActiveModel::Serializer
 
   def ope_no
     object.route_card_report.map{|i| i[:opeation_no]}.flatten
+  end
+  def chart_data
+   if object.chart_data.present?
+   
+   object.chart_data.each do |cha|
+     cha["load_duration"] = cha["load_end"].to_time - cha["load_start"].to_time
+     if cha["cycle_end"] == ""
+     cha["load_duration"] = cha["load_end"].to_time - cha["load_start"].to_time
+     else
+     cha["cycl_duration"] = cha["cycle_end"].to_time - cha["cycle_start"].to_time
+     end
+   end
+   else
+   []
+   end
   end
 end
