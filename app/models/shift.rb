@@ -10,10 +10,11 @@ class Shift
   field :break_time, type: Integer
   field :total_time, type: Integer
   field :actual_hour, type: Integer
+  field :module, type: String
   # belongs_to :OperatorAllocation
   has_many :reports
 
-  validates :start_time, :end_time, :total_hour, :shift_no, :start_day, :end_day, :break_time, presence: true
+  validates :start_time, :end_time, :total_hour, :shift_no, :start_day, :end_day, :break_time, :module, presence: true
 
   def self.current_shift
     shift = []
@@ -44,11 +45,45 @@ class Shift
     return shift
   end
 
-    def self.general_report(date, shift_no)
-#    puts Time.now
+  def self.current_shift2(module_key)
+    shift = []
+    shifts = Shift.where(module: module_key)
+    shifts.map do |ll|
+     case
+      when ll.start_day == '1' && ll.end_day == '1'
+        duration = ll.start_time.to_time..ll.end_time.to_time
+        if duration.include?(Time.now)
+          shift = ll
+        end
+      when ll.start_day == '1' && ll.end_day == '2'
+        if Time.now.strftime("%p") == "AM"
+          duration = ll.start_time.to_time-1.day..ll.end_time.to_time
+         else
+          duration = ll.start_time.to_time..ll.end_time.to_time+1.day
+         end
+        if duration.include?(Time.now)
+          shift = ll
+        end
+      else
+        duration = ll.start_time.to_time..ll.end_time.to_time
+        if duration.include?(Time.now)
+          shift = ll
+        end
+      end
+    end
+    return shift
+  end
+
+
+
+    def self.general_report(date, shift_no, module1)
+#   puts Time.now
     data = []
     oee_data = []
-    shift = Shift.find_by(shift_no:shift_no)
+  
+  #  byebug
+
+    shift = Shift.find_by(shift_no:shift_no, module: module1)
     case
     when shift.start_day == '1' && shift.end_day == '1'
       start_time = (date+" "+shift.start_time).to_time
@@ -64,7 +99,13 @@ class Shift
     duration = (end_time - start_time).to_i
     mac_list = L0Setting.pluck(:L0Name, :L0EnName)
     mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[0]}
-    machines = mac_lists.keys
+ 
+    machines = []  
+    mac_lists.keys.each do |jj|
+     if jj.include?(module1)
+     machines << jj 
+     end
+    end
 
     mac_sett = MachineSetting.where(group_signal: "MacroVar").group_by{|d| d[:L1Name]}
     mac_sett2 = MachineSetting.where(group_signal: "MacroVar")

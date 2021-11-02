@@ -80,7 +80,11 @@ module Api
 
       # GET /shifts
       def index
+        if  params[:module].present? 
+        @shifts = Shift.where(module: params[:module])
+        else
         @shifts = Shift.all
+        end
 
         render json: @shifts
       end
@@ -95,8 +99,10 @@ module Api
      
       @shift = Shift.new(shift_params)
       all_shift = []
-      shifts = Shift.all
+      
+      shifts = Shift.where(module: params[:module])
       shifts.map do |ll|
+      
       case
       when ll.start_day == '1' && ll.end_day == '1'
         all_shift << [ll.start_time.to_time..ll.end_time.to_time]
@@ -128,7 +134,7 @@ module Api
    end
  
 if shift_status.include?(true)
-render json: {msg: "Change Some Date or Day"}
+render json: {msg: "Change Some Date, Day or Module"}
 else
 
 
@@ -176,7 +182,7 @@ end
         # Only allow a trusted parameter "white list" through.
        
         def shift_params
-          params.require(:shift).permit(:start_time, :end_time, :total_hour, :shift_no, :start_day, :end_day)
+          params.require(:shift).permit(:start_time, :end_time, :total_hour, :shift_no, :start_day, :end_day, :module)
         end
     end
   end

@@ -8,15 +8,15 @@ class IdleReasonActive
   field :data, type: Array
   field :total, type: Integer
 
-  def self.idle_reason_report(date, shift_no)
+  def self.idle_reason_report(date, shift_no, module1)
      puts "Cron Start"
      puts Time.now
      data = []
-     shift = Shift.find_by(shift_no:shift_no)
+     shift = Shift.find_by(shift_no:shift_no, module: module1)
      # date = "2020-08-22"
 #      shift = Shift.current_shift
 
-       case
+    case
     when shift.start_day == '1' && shift.end_day == '1'
       start_time = (date+" "+shift.start_time).to_time
       end_time = (date+" "+shift.end_time).to_time
@@ -33,7 +33,16 @@ class IdleReasonActive
       #machines = L0Setting.pluck(:L0Name, :line)
      
       mac_list = L0Setting.pluck(:L0Name, :L0EnName)#.first(2)
-      machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
+      machines = []
+    
+      mac_list.each do |jj|
+       if jj.first.include?(module1)
+         machines << jj
+        end
+       end
+     
+
+###      machines = mac_list.map{|i| [i[0], i[1].split('-').first]}
 
      # machines = L0Setting.all.map{|i| [name: i[:L0Name], line: i[:line]]}.flatten.pluck(:name, :line)
 #      machine_logs = L1Pool.where(:enddate.gte => start_time, :updatedate.lte => end_time)
@@ -60,6 +69,7 @@ class IdleReasonActive
       key_values = L1SignalPool.where(:signalname.in => idle_reason_key, :enddate.gte => start_time, :updatedate.lte => end_time)
       key_value = L1SignalPoolActive.where(:signalname.in => idle_reason_key)
       data = []
+      
       machines.each do |mac|
 puts mac[0]       
         all_data = []        
@@ -76,10 +86,13 @@ puts mac[0]
           all_data << lastdata.first
           end
         end
-      
+        if mac[0] == "ELECTRICAL-C60"  
+      #  byebug
+        end    
         selected_data = all_data.select{|i| i.value != 0.0 && i.value != nil}
         puts selected_data.pluck(:value) 
         cumulate_idle = []
+#        byebug
         if selected_data.present?
           selected_data.each do |reason|
   

@@ -146,6 +146,7 @@ module Api
               render json: {
                 access_token: command.result,
                 role: user.role,
+                module: user.module,
                 tenant: tenant.tenant_name,
                 clr_code: tenant.color_code,
                 message: 'Login Successful'

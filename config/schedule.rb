@@ -31,7 +31,7 @@ env :PATH, ENV['PATH']
 #end
 
 every 1.day, at: '12:10 am' do
-#  runner "L1PoolOpened.cron_delay", :environment => :development
+  runner "L1PoolOpened.cron_delay", :environment => :development
 end
 
 every 15.minutes do

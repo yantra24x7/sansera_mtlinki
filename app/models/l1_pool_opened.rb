@@ -79,7 +79,7 @@ def self.cron_delay
   date = Date.today.to_s
 # date = Date.yesterday.to_s
  #  dates = "08-06-2021".to_date.."25-06-2021".to_date
- # date = "2021-05-31"
+#  date = "2021-10-31"
 #  dates.each do |date1|
 # date = date1.to_s
   Shift.all.each do |shift|
@@ -94,14 +94,14 @@ def self.cron_delay
       start_time = (date+" "+shift.start_time).to_time+1.day
       end_time = (date+" "+shift.end_time).to_time+1.day
     end
-    
-   unless Delayed::Job.where(run_at: end_time + 2.minutes).present?
-     Report.delay(run_at: end_time + 2.minutes).general_report(date, shift.shift_no)
-   end
+#byebug
+#   unless Delayed::Job.where(run_at: end_time + 2.minutes, module: shift.module).present?
+     Shift.delay(run_at: end_time + 2.minutes).general_report(date, shift.shift_no, shift.module)
+#   end
    
-   unless Delayed::Job.where(run_at: end_time + 3.minutes).present?
-     IdleReasonActive.delay(run_at: end_time + 3.minutes).idle_reason_report(date, shift.shift_no)
-   end
+#   unless Delayed::Job.where(run_at: end_time + 3.minutes, module: shift.module).present?
+     IdleReasonActive.delay(run_at: end_time + 3.minutes).idle_reason_report(date, shift.shift_no, shift.module)
+#   end
   end
 #end
 

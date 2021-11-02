@@ -1,5 +1,5 @@
 class ShiftSerializer < ActiveModel::Serializer
-  attributes :id, :start_time, :end_time,:shift_no, :start_day, :end_day, :duration, :total_hour, :break_time, :actual_hour
+  attributes :id, :start_time, :end_time,:shift_no, :start_day, :end_day, :duration, :total_hour, :break_time, :actual_hour, :module
   
   def duration
     case

@@ -56,44 +56,77 @@ end
     all_data = []
     date = Date.today.to_s
     
-    shift = Shift.current_shift
-    case
-    when shift.start_day == '1' && shift.end_day == '1'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time
-    when shift.start_day == '1' && shift.end_day == '2'
-      start_time = (date+" "+shift.start_time).to_time
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    else
-      start_time = (date+" "+shift.start_time).to_time+1.day
-      end_time = (date+" "+shift.end_time).to_time+1.day
-    end
+   # shift = Shift.current_shift
+   # case
+   # when shift.start_day == '1' && shift.end_day == '1'
+   #   start_time = (date+" "+shift.start_time).to_time
+   #   end_time = (date+" "+shift.end_time).to_time
+   # when shift.start_day == '1' && shift.end_day == '2'
+   #   start_time = (date+" "+shift.start_time).to_time
+   #   end_time = (date+" "+shift.end_time).to_time+1.day
+   # else
+   #   start_time = (date+" "+shift.start_time).to_time+1.day
+   #   end_time = (date+" "+shift.end_time).to_time+1.day
+   # end
 
 
 
-    duration = (end_time - start_time).to_i
+#    duration = (end_time - start_time).to_i
+
     mac_list = L0Setting.pluck(:L0Name, :L0EnName)
     mac_lists = mac_list.map{|i| [i[0], i[1].split('-').first]}.group_by{|yy| yy[0]}
     machines = mac_lists.keys
-   operators = Operator.all.pluck(:operator_spec_id, :operator_name).group_by(&:first)
+    operators = Operator.all.pluck(:operator_spec_id, :operator_name).group_by(&:first)
     mac_sett = MachineSetting.where(group_signal: "MacroVar").group_by{|d| d[:L1Name]}
+ 
     if mac_sett.present?
     macro_list = mac_sett.values.map{|i| i.first.value}.sum
     else
     macro_list = []
     end
 
-    stt_time = start_time.strftime("%Y-%m-%d %H:%M:%S")#start_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
-    edd_time = end_time.strftime("%Y-%m-%d %H:%M:%S")#end_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
-   # url = "http://103.114.208.206:3000/api/v1/equipment/VALVE-C46/monitorings/MacroVar_750_path1_VALVE-C46/logs?from=2021-08-15T00:00:00.000Z&&to=2021-08-16T00:00:00.000Z"
-    prod_result_url = "http://103.114.208.206:3000/api/v1/equipment/product-results?from=#{stt_time}&&to=#{edd_time}"
-    resource_prod_result = RestClient::Resource.new(prod_result_url,'rabwin','yantra24x7')
-    response_prod_result = resource_prod_result.get
-    prod_result_data = JSON.parse response_prod_result.body
+#    stt_time = start_time.strftime("%Y-%m-%d %H:%M:%S")#start_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
+#    edd_time = end_time.strftime("%Y-%m-%d %H:%M:%S")#end_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
+   
+   # prod_result_url = "http://103.114.208.206:3000/api/v1/equipment/product-results?from=#{stt_time}&&to=#{edd_time}"
+   # resource_prod_result = RestClient::Resource.new(prod_result_url,'rabwin','yantra24x7')
+   # response_prod_result = resource_prod_result.get
+   # prod_result_data = JSON.parse response_prod_result.body
 
     machines.each do |key|
-    
     puts key
+    
+
+   module_key= key.split("-").first
+
+   if Shift.where(module: module_key).present?
+   shift = Shift.current_shift2(module_key)
+   else
+   shift = Shift.current_shift2("GENERAL")
+   end
+   case
+   when shift.start_day == '1' && shift.end_day == '1'
+     start_time = (date+" "+shift.start_time).to_time
+     end_time = (date+" "+shift.end_time).to_time
+   when shift.start_day == '1' && shift.end_day == '2'
+     start_time = (date+" "+shift.start_time).to_time
+     end_time = (date+" "+shift.end_time).to_time+1.day
+   else
+     start_time = (date+" "+shift.start_time).to_time+1.day
+     end_time = (date+" "+shift.end_time).to_time+1.day
+   end
+  
+   duration = (end_time - start_time).to_i
+
+   stt_time = start_time.strftime("%Y-%m-%d %H:%M:%S")#start_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
+   edd_time = end_time.strftime("%Y-%m-%d %H:%M:%S")#end_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
+
+   prod_result_url = "http://103.114.208.206:3000/api/v1/equipment/product-results?from=#{stt_time}&&to=#{edd_time}"
+   resource_prod_result = RestClient::Resource.new(prod_result_url,'rabwin','yantra24x7')
+   response_prod_result = resource_prod_result.get
+   prod_result_data = JSON.parse response_prod_result.body
+
+
     operate = []
     manual = []
     disconnect = []
