@@ -3,6 +3,15 @@ module Api
   	class UsersController < ApplicationController
       before_action :set_operator, only: [:show, :update, :destroy]
       skip_before_action :authenticate_request, only: %i[tenant_creation check_status user_signup login identify_user verify_user password_updation tab_machine_list]
+     
+     def user_tracking
+      page = params[:page].present? ? params[:page] : 1
+      page_count = params[:per_page].present? ? params[:per_page] :10
+      tracking = User.find(params[:id]).visits.reverse
+      @trakings = tracking.paginate(:page => page, :per_page => page_count)
+#      render json: @trakings
+      render json: {track: @trakings, track_count: tracking.count}
+     end
 
       def check_status
        if Tenant.all.present?
@@ -14,6 +23,7 @@ module Api
       end
 
       def tenant_creation
+        Role.create(role_name: "Yantra_Admin")
         Role.create(role_name: "Admin")
         Role.create(role_name: "Supervisor")
         Role.create(role_name: "QA")
@@ -35,7 +45,7 @@ module Api
 
           page = params[:page].present? ? params[:page] : 1
           page_count = params[:per_page].present? ? params[:per_page] :10
-          users = User.all
+          users = User.where.not(role: "Yantra_Admin")
           user_list = users.paginate(:page => page, :per_page => page_count)
           render json: {user_list: user_list, user_count: users.count}
 
@@ -135,8 +145,7 @@ module Api
         end
 
         def authenticate(email, password)
-            command = AuthenticateUser.call(email, password) 
-         # byebug 
+            command = AuthenticateUser.call(email, password)  
             if command.success?
               user_id = JsonWebToken.decode(command.result)["user_id"]
               user = User.find(user_id)

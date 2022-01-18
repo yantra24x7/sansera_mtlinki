@@ -31,16 +31,16 @@ env :PATH, ENV['PATH']
 #end
 
 every 1.day, at: '12:10 am' do
-  runner "L1PoolOpened.cron_delay", :environment => :development
+#  runner "L1PoolOpened.cron_delay", :environment => :development
 end
 
 every 15.minutes do
-  runner "NotificationSetting.sent_notification", :environment => :development
+ # runner "NotificationSetting.sent_notification", :environment => :development
 end
 
 
 every 3.minutes do
-  runner "NotificationSetting.dashboard", :environment => :development
+ # runner "NotificationSetting.dashboard", :environment => :development
 end
 
 every 60.minutes do

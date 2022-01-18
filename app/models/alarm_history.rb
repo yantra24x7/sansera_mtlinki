@@ -15,17 +15,28 @@ class AlarmHistory
    field :type, type: String
    field :timespan, type: Float #Integeri
    
-   search_in :L0Name, :message, :updatedate
-  # search_in :message 
+   search_in :L0Name, :message#, :updatedate
+   search_in :message 
 #   search_in :updatedate
-   search_in :number
-   #fulltext_search_in :L0Name, :message#, :updatedate, :enddate
+#   search_in :number
+  # fulltext_search_in :L0Name, :message#, :updatedate, :enddate
   # search_in :message, index: :_unit_keywords
-   index({ L1Name: 1, L0Name: 1, number: 1, updatedate: 1, message: 1, type: 1 })
-   index({ enddate: 1})
-   index({ updatedate: -1, L1Name: 1, L0Name: 1, type: 1, number: 1})
-   index({ L1Name: 1, updatedate: -1,number: 1, type:1, L0Name: 1, timespan:1, level: 1, message: 1})
-   index({ updatedate: -1, enddate: 1, L1Name: 1})
-   index({ L0Name: 1, updatedate: -1})
+ 
+#  search_in :search_data
+
+#  def search_data
+    # concatenate all String fields' values
+#    self.attributes.select{|k,v| v.is_a?(String) }.values.join(' ')
+#  end
+#   fulltext_search_in :message, :L0Name
+
+# fulltext_search_in :L1Name, :message, :index_name => 'gallery_index'
+
+#   index({ L1Name: 1, L0Name: 1, number: 1, updatedate: 1, message: 1, type: 1 })
+#   index({ enddate: 1})
+#   index({ updatedate: -1, L1Name: 1, L0Name: 1, type: 1, number: 1})
+#   index({ L1Name: 1, updatedate: -1,number: 1, type:1, L0Name: 1, timespan:1, level: 1, message: 1})
+#   index({ updatedate: -1, enddate: 1, L1Name: 1})
+#   index({ L0Name: 1, updatedate: -1})
    
 end

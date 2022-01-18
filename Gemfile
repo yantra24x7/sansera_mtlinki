@@ -26,6 +26,10 @@ gem 'rest-client'
 # gem 'redis', '~> 4.0'
 # Use ActiveModel has_secure_password
 #gem 'bcrypt', '~> 3.1.7'
+gem 'ahoy_matey'
+gem 'geocoder'
+gem 'maxminddb'
+
 
 gem 'mongoid-bcrypt-ruby'
 

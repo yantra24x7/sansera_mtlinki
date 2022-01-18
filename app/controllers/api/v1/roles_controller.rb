@@ -5,7 +5,8 @@ module Api
 
       # GET /roles
       def index
-        @roles = Role.all
+
+        @roles = Role.where.not(role_name: "Yantra_Admin")
 
         render json: @roles
       end

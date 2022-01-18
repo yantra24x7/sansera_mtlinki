@@ -23,7 +23,9 @@ class User
    validates :email, :phone_no, uniqueness: true
    validates :first_name, :last_name, :email, :role,:phone_no, :password, presence: true
    before_create :encrypt_password
-  
+
+   has_many :visits, class_name: "Ahoy::Visit"
+   has_many :events, class_name: "Ahoy::Event"  
    def self.authenticate(email, password)
      user = User.find_by(email: email)
      if user && BCrypt::Password.new(user.password) == password

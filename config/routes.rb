@@ -9,7 +9,7 @@ Rails.application.routes.draw do
       get 'machine_count' => 'reports#machine_count'
       get 'check_status' => 'users#check_status'
       post 'tenant_creation' => 'users#tenant_creation'
-
+      get 'current_idle_reasons' => 'machines#current_idle_reason'
 
       # -- Machine -- #
       post 'machine_update' => 'machines#machine_update'
@@ -90,8 +90,8 @@ Rails.application.routes.draw do
         get 'r_get_status' => "machines#r_get_status2" 
         get 'line_wise_dashboards' => 'machines#line_wise_dashboard'
         get 'live_machine_detail' => 'machines#live_machine_detail'
-        get 'idle_reports' => 'reports#idle_report'
-        get 'idle_report_chart' => 'reports#idle_report_chart'
+        post 'idle_reports' => 'reports#idle_report'
+        post 'idle_report_chart' => 'reports#idle_report_chart'
 
         get 'module_filters' => 'reports#module_filter'
         get 'report_filters' => 'reports#report_filter'
@@ -105,6 +105,7 @@ Rails.application.routes.draw do
         get 'edit_recs' => 'roles#edit_rec'
         put 'edit_settings' => 'roles#edit_setting'
         get 'prev_dashboards' => "shifts#prev_dashboard"
+        get 'log_activity' => "users#user_tracking"
  
         resources :components
         resources :oee_calculations        

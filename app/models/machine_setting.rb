@@ -16,6 +16,19 @@ def self.setting(params)
    val = MachineSetting.where(group_signal: "SpindleLoad", L1Name: params[:L1Name]).first
    value << val
   end
+
+
+#  unless MachineSetting.where(group_signal: "FeedRate", L1Name: params[:L1Name]).present?
+#   val = MachineSetting.create(L1Name: params[:L1Name], group_signal: "FeedRate", signal: [], value: ["ActF_path1_#{params[:L1Name]}"], max: 150)
+#   value << val
+#  else
+#   val = MachineSetting.where(group_signal: "FeedRate", L1Name: params[:L1Name]).first
+#   value << val
+#  end
+
+
+
+
  list_of_setting = ["ServoLoad"]
  axis_list = [{x_axis: false, y_axis: false, z_axis: false, a_axis: false, b_axis: false}]
 # ServoLoad_0_path1_PUMP-C86
@@ -44,6 +57,16 @@ def self.setting(params)
     value << val
   end
  end
+
+ unless MachineSetting.where(group_signal: "FeedRate", L1Name: params[:L1Name]).present?
+   val = MachineSetting.create(L1Name: params[:L1Name], group_signal: "FeedRate", signal: [], value: ["ActF_path1_#{params[:L1Name]}"], max: 150)
+   value << val
+  else
+   val = MachineSetting.where(group_signal: "FeedRate", L1Name: params[:L1Name]).first
+   value << val
+  end
+
+
   return value
 end
 

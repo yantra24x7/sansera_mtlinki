@@ -2,151 +2,264 @@ module Api
   module V1
     class MachinesController < ApplicationController
    
-    def live_machine_detail
-     date = Date.today.to_s
-     shift = Shift.current_shift
 
-        case
+    def current_idle_reason
+      date = Date.today.to_s 
+      module_key = params["machine"].split('-').first
+      if Shift.where(module: module_key).present?
+        shift = Shift.current_shift2(module_key)
+      else
+        shift = Shift.current_shift2("GENERAL")
+      end
+      case
         when shift.start_day == '1' && shift.end_day == '1'
           start_time = (date+" "+shift.start_time).to_time
           end_time = (date+" "+shift.end_time).to_time
         when shift.start_day == '1' && shift.end_day == '2'
-          if Time.now.strftime("%p") == "AM"
-            start_time = (date+" "+shift.start_time).to_time-1.day
-            end_time = (date+" "+shift.end_time).to_time
-          else
-            start_time = (date+" "+shift.start_time).to_time
-            end_time = (date+" "+shift.end_time).to_time+1.day
-          end
-        else
           start_time = (date+" "+shift.start_time).to_time
-          end_time = (date+" "+shift.end_time).to_time
+          end_time = (date+" "+shift.end_time).to_time+1.day
+        else
+          start_time = (date+" "+shift.start_time).to_time+1.day
+          end_time = (date+" "+shift.end_time).to_time+1.day
         end
 
-        duration  = (end_time - start_time).to_i
-        machine = params[:machine]
-        line = params[:line]
-        cur_st = CurrentStatus.last
-               
-        data = cur_st.r_data.select{|i| i[:machine] == machine}
-        
-        operators = Operator.all
+       stt_time = start_time.strftime("%Y-%m-%d %H:%M:%S")#start_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
+       edd_time = end_time.strftime("%Y-%m-%d %H:%M:%S")#end_time.to_i#.utc#.strftime("%Y-%m-%dT%H:%M:%S:%z")
+      
+      reason_list = IdleReason.all.pluck(:code, :reason).group_by{|kk| kk[0]} 
+      idle_reason_key = []
+      full_source = MachineSetting.where(group_signal: "MacroVar", L1Name: params["machine"]).pluck(:signal)
+      full_source.each do |kn|
+       kn.each do |val|
+        if val.first[0] == "idle_reason"
+          idle_reason_key << val.first[1]
+        end
+       end
+      end
+    
+     return_data = []
+     if idle_reason_key.present?
+        idle_key = idle_reason_key.first
+        url_for_root_card = "http://103.114.208.206:3000/api/v1/equipment/#{params["machine"]}/monitorings/#{idle_key}/logs?from=#{stt_time}&&to=#{edd_time}"
+        resource_root_card = RestClient::Resource.new(url_for_root_card,'rabwin','yantra24x7')
+        response_root_card = resource_root_card.get
+        root_card_data = JSON.parse response_root_card.body
+        root_card_data1 = root_card_data.select{|mm| mm["value"] != 0 && mm["value"] != nil}
+
+        root_card_data1.each do |mm|
+          if mm["end"] == nil
+            return_data << {reason: reason_list[mm["value"]].first[1], start: mm["start"].to_time.localtime, end: nil, total: nil }
+          else
+             return_data << {reason: reason_list[mm["value"]].first[1], start: mm["start"].to_time.localtime, end:  mm["end"].to_time.localtime, total: (mm["end"].to_time.localtime - mm["start"].to_time.localtime)}
+          end
+        end        
+     else
+     end
+     render json: return_data
+    end
+
+    def live_machine_detail
+     date = Date.today.to_s
+   #  shift = Shift.current_shift
+   #  case
+   #   when shift.start_day == '1' && shift.end_day == '1'
+   #     start_time = (date+" "+shift.start_time).to_time
+   #     end_time = (date+" "+shift.end_time).to_time
+   #   when shift.start_day == '1' && shift.end_day == '2'
+   #     if Time.now.strftime("%p") == "AM"
+   #       start_time = (date+" "+shift.start_time).to_time-1.day
+   #       end_time = (date+" "+shift.end_time).to_time
+   #     else
+   #       start_time = (date+" "+shift.start_time).to_time
+   #       end_time = (date+" "+shift.end_time).to_time+1.day
+   #     end
+   #   else
+   #     start_time = (date+" "+shift.start_time).to_time
+   #     end_time = (date+" "+shift.end_time).to_time
+   #   end
+     module_key = params["machine"].split('-').first
+      if Shift.where(module: module_key).present?
+        shift = Shift.current_shift2(module_key)
+      else
+        shift = Shift.current_shift2("GENERAL")
+      end
+       
+      case
+      when shift.start_day == '1' && shift.end_day == '1'
+        start_time = (date+" "+shift.start_time).to_time
+        end_time = (date+" "+shift.end_time).to_time
+      when shift.start_day == '1' && shift.end_day == '2'
+        if Time.now.strftime("%p") == "AM"
+          start_time = (date+" "+shift.start_time).to_time-1.day
+          end_time = (date+" "+shift.end_time).to_time
+        else
+          start_time = (date+" "+shift.start_time).to_time
+          end_time = (date+" "+shift.end_time).to_time+1.day
+        end
+      else
+        start_time = (date+" "+shift.start_time).to_time
+        end_time = (date+" "+shift.end_time).to_time
+      end
+
+
+
+      duration  = (end_time - start_time).to_i
+      machine = params[:machine]
+      line = params[:line]
+      cur_st = CurrentStatus.last       
+      operators = Operator.all  
+      data = cur_st.r_data.select{|i| i[:machine] == machine}
 
       servo_load1 = []
       servo_load2 = []
       root_card1 = []
       op_id1 = []
       op_num1 = []
-      full_source = MachineSetting.where(group_signal: "MacroVar", L1Name: machine).pluck(:signal)
+      
+#      full_source = MachineSetting.where(group_signal: "MacroVar", L1Name: machine).pluck(:signal)
+      
+      full_sources = MachineSetting.where(:group_signal.in=> ["MacroVar", "SpindleLoad", "ServoLoad", "FeedRate"], L1Name: machine)
+      full_source1 = full_sources.select{|jj| jj[:group_signal] == "MacroVar"}
+      
+      if full_source1.present?
+       full_source = [full_source1.first.signal]
+      else
+       full_source = []
+      end
+      
       full_source.each do |kn|
-       kn.each do |val|
-
-        if val.first[0] == "route_card"
-          root_card1 << val.first[1]
-        elsif val.first[0] == "operation_number"
-          op_num1 << val.first[1]
-        elsif val.first[0] == "operator_id"
-          op_id1 <<  val.first[1]
-        else
+        kn.each do |val|
+          if val.first[0] == "route_card"
+            root_card1 << val.first[1]
+          elsif val.first[0] == "operation_number"
+            op_num1 << val.first[1]
+          elsif val.first[0] == "operator_id"
+            op_id1 <<  val.first[1]
+          else
+          end
         end
-       end
       end
 
-      
-      spindle_source_non_val = MachineSetting.where(group_signal: "SpindleLoad", L1Name: machine)#.pluck(:value)
+     # spindle_source_non_val = MachineSetting.where(group_signal: "SpindleLoad", L1Name: machine)
+      spindle_source_non_val = full_sources.select{|jj| jj[:group_signal] == "SpindleLoad"}     
+
       if spindle_source_non_val.present?
         spindle_source_max_value = spindle_source_non_val.first.max
+        spindle_source = spindle_source_non_val.pluck(:value)
       else
         spindle_source_max_value = 150.0
+        spindle_source = [[]]
       end
-      spindle_source = spindle_source_non_val.pluck(:value)
+   #   spindle_source = spindle_source_non_val.pluck(:value)
      
-#      servo_load1 = []
-      servo_source = MachineSetting.where(group_signal: "ServoLoad", L1Name: machine).pluck(:signal, :value)
+     # servo_source = MachineSetting.where(group_signal: "ServoLoad", L1Name: machine).pluck(:signal, :value)
+      servo_source1 = full_sources.select{|jj| jj[:group_signal] == "ServoLoad"}
+      if servo_source1.present?
+       servo_source = servo_source1.pluck(:signal, :value)
       servo_source.first.first.each do |kn|
-      
-       kn.each do |val|
-      
-        case
-         when val.first == "x_axis" && val.second == true
-          servo_load1 << servo_source.first.last[0]    
-          servo_load2 << "x_axis"
-         when val.first == "y_axis" && val.second == true
-          servo_load1 << servo_source.first.last[1]
+        kn.each do |val|
+         case
+          when val.first == "x_axis" && val.second == true
+           servo_load1 << servo_source.first.last[0]    
+           servo_load2 << "x_axis"
+          when val.first == "y_axis" && val.second == true
+           servo_load1 << servo_source.first.last[1]
            servo_load2 << "y_axis"
-         when val.first == "z_axis" && val.second == true
-          servo_load1 << servo_source.first.last[2]
+          when val.first == "z_axis" && val.second == true
+           servo_load1 << servo_source.first.last[2]
            servo_load2 << "z_axis"
-         when val.first == "a_axis" && val.second == true
-          servo_load1 << servo_source.first.last[3]
+          when val.first == "a_axis" && val.second == true
+           servo_load1 << servo_source.first.last[3]
            servo_load2 << "a_axis"
-         when val.first == "b_axis" && val.second == true
-          servo_load1 << servo_source.first.last[4]
+          when val.first == "b_axis" && val.second == true
+           servo_load1 << servo_source.first.last[4]
            servo_load2 << "b_axis"
-         else
+          else
            puts "Servo Not Permit "
+          end
         end
-       end
+      end
+      else
+      end
+      
+      feed_rate_source = full_sources.select{|jj| jj[:group_signal] == "FeedRate"}
+      if feed_rate_source.present?
+        feed_rate_max_value = feed_rate_source.first.max
+        feed_source = feed_rate_source.pluck(:value)
+      else
+        feed_rate_max_value = 150.0
+        feed_source = [[]]
       end
 
+      root_card = root_card1.first
+      op_id = op_id1.first
+      key_list = root_card1
+      servo_temp = ["ServoTemp_0_path1_#{machine}", "ServoTemp_1_path1_#{machine}", "ServoTemp_2_path1_#{machine}"]
+      servo_load = servo_load1
+      spendle_load = spindle_source.first
 
-
-#        root_card = "MacroVar_751_path1_#{machine}"
-#        op_id = "MacroVar_750_path1_#{machine}"
-        root_card = root_card1.first
-        op_id = op_id1.first
-#        key_list = ["MacroVar_751_path1_#{machine}"]
-        key_list = root_card1
-
-
-        servo_temp = ["ServoTemp_0_path1_#{machine}", "ServoTemp_1_path1_#{machine}", "ServoTemp_2_path1_#{machine}"]
-
-        servo_load = servo_load1#["ServoLoad_0_path1_#{machine}", "ServoLoad_1_path1_#{machine}"]
-        spendle_load = spindle_source.first
-        spendle_load_log = L1SignalPool.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine, :signalname.in => spindle_source.first, :value.ne => nil)
+      spendle_load_log = L1SignalPool.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine, :signalname.in => spindle_source.first, :value.ne => nil)
+      sp_log_over_travel = spendle_load_log.select{|kj| kj.value > spindle_source_max_value}
+      sp_log_over_travel_value = sp_log_over_travel.pluck(:updatedate, :enddate, :value)
+      sp_log_over_res = {count: sp_log_over_travel.count, value: sp_log_over_travel_value}
     
-        sp_log_over_travel = spendle_load_log.select{|kj| kj.value > spindle_source_max_value}
-        sp_log_over_travel_value = sp_log_over_travel.pluck(:updatedate, :enddate, :value)
-        sp_log_over_res = {count: sp_log_over_travel.count, value: sp_log_over_travel_value}
-        sig_parms = L1SignalPoolActive.where(L1Name: machine)#, signalname: servo_load)
-        
-        sv_load = sig_parms.where(:signalname.in => servo_load)
-        sp_load = sig_parms.where(:signalname.in => spendle_load)
-       
-#        op_num = sig_parms.where(:signalname=> "MacroVar_752_path1_#{machine}") 
-        op_num = sig_parms.where(:signalname=> op_num1.first)
 
-     
-        if op_num.present?
-         op_number = op_num.pluck(:value).last.to_i
-        else
-         op_number = 0
-        end
-        
-        col = []
-        col << root_card
-        col << op_id
-        macros = L1SignalPoolActive.where(:signalname.in => col)
-        operator_id = macros.select{|i| i[:signalname] == op_id}
-        root_card_id = macros.select{|i| i[:signalname] == root_card}
-         if operator_id.present?
-         sel_op = operators.select{|i| i[:operator_spec_id] == operator_id.first.value.to_i.to_s}
-         if sel_op.present?
+      feed_rate_log = L1SignalPool.where(:enddate.gte => start_time, :updatedate.lte => end_time, L1Name: machine, :signalname.in => feed_source.first, :value.ne => nil)
+
+      feed_log_over_travel = feed_rate_log.select{|kj| kj.value > feed_rate_max_value}
+      feed_log_over_travel_value = feed_log_over_travel.pluck(:updatedate, :enddate, :value)
+      feed_log_over_res = {count: feed_log_over_travel.count, value: feed_log_over_travel_value}
+
+      sig_parms = L1SignalPoolActive.where(L1Name: machine)
+      sv_load = sig_parms.where(:signalname.in => servo_load)
+      sp_load = sig_parms.where(:signalname.in => spendle_load)
+      op_num = sig_parms.where(:signalname=> op_num1.first)
+
+      if op_num.present?
+       op_number = op_num.pluck(:value).last.to_i
+      else
+       op_number = 0
+      end
+   
+      col = []
+      col << root_card
+      col << op_id
+      macros = L1SignalPoolActive.where(:signalname.in => col)
+      operator_id = macros.select{|i| i[:signalname] == op_id}
+      root_card_id = macros.select{|i| i[:signalname] == root_card}
+      
+      if operator_id.present?
+        sel_op = operators.select{|i| i[:operator_spec_id] == operator_id.first.value.to_i.to_s}
+        if sel_op.present?
           operator = sel_op.first.operator_name
-         else
-          operator = "N/A"
-         end
         else
           operator = "N/A"
         end
+      else
+        operator = "N/A"
+      end
 
-        if root_card_id.present?
-         job = root_card_id.first.value.to_i
-        else
-         job = "N/A"
-        end        
-        render json: {effe: data.first["efficiency"], target: data.first["tar"], actual: data.first["actual"], job: job, o_p_num: op_number,operator: operator, line: params[:line], machine: params[:machine], run_time: data.first["run"], stop: data.first["idle"], diconnect: data.first["dis"], utlization: data.first["run"], servo_load: sv_load.pluck(:value), spendle_load: sp_load.pluck(:value), sv_axis:  servo_load2 ,  sp_max_val: spindle_source_max_value, sp_log_over_res: sp_log_over_res}
-    end
+      if root_card_id.present?
+        job = root_card_id.first.value.to_i
+      else
+        job = "N/A"
+      end       
+
+      res_sv_load = sv_load.pluck(:value)
+      cc_count = servo_load2.count - sv_load.pluck(:value).count
+       
+      cc_count.times.each do |jj|
+       res_sv_load << 0.0
+      end
+      spp1 = sp_load.pluck(:value).select{|k| k!=nil && k!= 0.0}    
+      
+      if spp1.empty?
+       spp_load = [0.0]
+      else
+       spp_load = spp1
+      end
+      render json: {effe: data.first["efficiency"], target: data.first["tar"], actual: data.first["actual"], job: job, o_p_num: op_number,operator: operator, line: params[:line], machine: params[:machine], run_time: data.first["run"], stop: data.first["idle"], diconnect: data.first["dis"], utlization: data.first["run"], servo_load: res_sv_load, spendle_load: spp_load, sv_axis:  servo_load2 ,sp_max_val: spindle_source_max_value, sp_log_over_res: sp_log_over_res, feed_max_val: feed_rate_max_value, feed_log_over_res: feed_log_over_res }
+     end
 
 
 
@@ -996,25 +1109,53 @@ end
 			machines = L0Setting.all
 			machine_list = machines.map{|i| [id: i[:id], L0Name: i[:L0Name], ip: i[:NetworkSetting][:IpAddress], line: i[:line]]}
 			res_list = []
+                        mac_settings = MachineSetting.all
+                       
+                        grp_value = mac_settings.group_by(&:L1Name)
                         machine_list.flatten.each do |lis|
-                          if MachineSetting.where(group_signal: "MacroVar", L1Name: lis[:L0Name]).present?
-                           lis[:tag_result] = true
-                          else
-                           lis[:tag_result] = false
-                          end
-                          if MachineSetting.where(group_signal: "SpindleLoad", L1Name: lis[:L0Name]).present?
-                           lis[:tag_result1] = true
-                          else
-                           lis[:tag_result1] = false
-                          end
-                          if MachineSetting.where(group_signal: "ServoLoad", L1Name: lis[:L0Name]).present?
-                           lis[:tag_result2] = true
-                          else
-                           lis[:tag_result2] = false
-                          end
+                      # byebug
+                        set_list = grp_value[lis[:L0Name]].pluck(:group_signal)
+                      #  set_list = mac_settings.select{|i| i[:L1Name] == lis[:L0Name]}.pluck(:group_signal)
 
+                        if set_list.include?("MacroVar") 
+                         lis[:tag_result] = true
+                        else
+                         lis[:tag_result] = false
+                        end
+                        
+                        if set_list.include?("SpindleLoad")
+                         lis[:tag_result1] = true
+                        else
+                         lis[:tag_result1] = false
+                        end
+                        
+                        if set_list.include?("ServoLoad")
+                         lis[:tag_result2] = true
+                        else
+                         lis[:tag_result2] = false
+                        end
 
-
+                        if set_list.include?("FeedRate")
+                         lis[:tag_result3] = true
+                        else
+                         lis[:tag_result3] = false
+                        end
+                         
+       #                   if MachineSetting.where(group_signal: "MacroVar", L1Name: lis[:L0Name]).present?
+       #                    lis[:tag_result] = true
+       #                   else
+       #                    lis[:tag_result] = false
+       #                   end
+       #                   if MachineSetting.where(group_signal: "SpindleLoad", L1Name: lis[:L0Name]).present?
+       #                    lis[:tag_result1] = true
+       #                   else
+       #                    lis[:tag_result1] = false
+       #                   end
+       #                   if MachineSetting.where(group_signal: "ServoLoad", L1Name: lis[:L0Name]).present?
+       #                    lis[:tag_result2] = true
+       #                   else
+       #                    lis[:tag_result2] = false
+       #                   end
                         end
                         
                         render json: machine_list.flatten

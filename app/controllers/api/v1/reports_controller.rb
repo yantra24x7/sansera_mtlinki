@@ -112,34 +112,44 @@ module Api
       machine = L0Setting.pluck(:L0Name)
       render json: machine
      end
-     def idle_report
-#byebug       
-       machine = params[:machine]#Machine.where(id: params[:machine_id]).ids
+     def idle_report       
+       machine = params[:machine].present? ? params[:machine] : L0Setting.pluck(:L0Name) #Machine.where(id: params[:machine_id]).ids
        st_time = params[:date].present? ? params[:date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')
        date = Date.strptime(st_time, '%m/%d/%Y')
-  
+       ed_time = params[:date].present? ? params[:date].split('-')[1] : (Date.today).strftime('%m/%d/%Y')
+       date1 = Date.strptime(ed_time, '%m/%d/%Y')
+ #     byebug 
       # date = params[:date].to_date.strftime("%Y-%m-%d")
-       shift = params[:shift]#Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
-#       byebug
+       shift = params[:shift].present? ? params[:shift] : [params[:shift]] #Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
+#byebug       
 #       idle_report = IdleReasonActive.where(date:  date.to_time.strftime("%m-%d-%Y"), shift_no: shift, machine_name: machine)
-        idle_report = IdleReasonActive.where(date:  date, shift_no: shift, machine_name: machine) 
+        idle_report = IdleReasonActive.where(date:  date..date1, :shift_no.in=> shift, :machine_name.in=> machine) 
       render json: idle_report
   #  data = CncHourReport.where(date: date, machine_id: machine, shift_no: shift)
 
      end    
 
       def idle_report_chart
-#byebug
-       machine = params[:machine]#Machine.where(id: params[:machine_id]).ids
+     #  machine = params[:machine]#Machine.where(id: params[:machine_id]).ids
+     #  st_time = params[:date].present? ? params[:date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')
+     #  date = Date.strptime(st_time, '%m/%d/%Y')
+     #  shift = params[:shift]#Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
+     #  idle_report = IdleReasonActive.where(date:  date, shift_no: shift, machine_name: machine)
+       machine = params[:machine].present? ? params[:machine] : L0Setting.pluck(:L0Name) #Machine.where(id: params[:machine_id]).ids
        st_time = params[:date].present? ? params[:date].split('-')[0] : (Date.today - 1).strftime('%m/%d/%Y')
        date = Date.strptime(st_time, '%m/%d/%Y')
-       shift = params[:shift]#Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
-        idle_report = IdleReasonActive.where(date:  date, shift_no: shift, machine_name: machine)
-      ret_data = []
-     if idle_report.present?
+       ed_time = params[:date].present? ? params[:date].split('-')[1] : (Date.today).strftime('%m/%d/%Y')
+       date1 = Date.strptime(ed_time, '%m/%d/%Y')
+       shift = params[:shift].present? ? params[:shift] : [params[:shift]] #Shifttransaction.where(id:params[:shift_id]).pluck(:shift_no)
+       idle_report = IdleReasonActive.where(date:  date..date1, :shift_no.in=> shift, :machine_name.in=> machine)
+   
+       ret_data = []
+       if idle_report.present?
          rep_data = idle_report.first
-         tot_time = rep_data.total
-         repo_data = rep_data.data
+       #  tot_time = rep_data.total
+         tot_time = idle_report.pluck(:total).sum
+         repo_data = idle_report.pluck(:data).flatten
+        # repo_data = rep_data.data
          cumul_data = repo_data.group_by{|kk| kk["idle_reason"]}
          cumul_data.each do |k, val|
            

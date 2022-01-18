@@ -307,6 +307,7 @@ end
      end
 
      if time_wise_route_list.present?
+
        time_wise_route_list.each do |data|
         # production_result  = p_result.select{|sel| sel.enddate > data[:st_time].localtime && sel.updatedate < data[:ed_time].localtime && sel.L1Name == key && sel.enddate < data[:ed_time].localtime && sel.productresult != 0}
 
@@ -326,6 +327,10 @@ end
         end
 
            production_result = prod_result.select{|sel| sel["end"].to_time.localtime > data[:st_time].to_time.localtime && sel["start"].to_time.localtime < data[:ed_time].to_time.localtime && sel["end"].to_time.localtime < data[:ed_time].to_time.localtime && sel["increment"] != 0}
+           if key ==  'VALVE-C109'
+      byebug
+      end
+
           if production_result.present?
            actual_produced =  production_result.pluck("increment").sum
            product_start_time = production_result.first["start"].to_time.localtime
